@@ -1,0 +1,9 @@
+# Versions recorded in the published V100 / CUDA 12.4 environment.
+# Install the CUDA 12.4 torch wheel separately when required by your platform.
+torch==2.6.0
+transformers==5.14.1
+tokenizers==0.22.2
+numpy==2.4.6
+scikit-learn==1.9.0
+accelerate==1.14.0
+safetensors==0.8.0

@@ -1,0 +1,10 @@
+{
+  "partition_sizes": [
+    97,
+    97,
+    97
+  ],
+  "remaining_unique_answers": 291,
+  "selection": "Every remaining unique author-task/full-answer pair; no output selection",
+  "stage_a_equivalent_groups": 285
+}

@@ -1,0 +1,92 @@
+{
+  "allocation": {
+    "SLURM_JOBID": "899923",
+    "SLURM_JOB_ID": "899923"
+  },
+  "attention_implementation": "eager",
+  "authorized_existing_gpu": false,
+  "block_definition": "B0 is model.model.layers[0] output, before final model.model.norm",
+  "chat_template": "{{ bos_token }}{% if messages[0]['role'] == 'system' %}{{ raise_exception('System role not supported') }}{% endif %}{% for message in messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if (message['role'] == 'assistant') %}{% set role = 'model' %}{% else %}{% set role = message['role'] %}{% endif %}{{ '<start_of_turn>' + role + '\n' + message['content'] | trim + '<end_of_turn>\n' }}{% endfor %}{% if add_generation_prompt %}{{'<start_of_turn>model\n'}}{% endif %}",
+  "chat_template_kwargs": {
+    "add_generation_prompt": true
+  },
+  "chat_template_sha256": "a4722367e313c94c5637c041b6e6139a3a5acaeeb3eeb2e5066c27084b927ce9",
+  "checkpoint_revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+  "config_sha256": "8ecc124513fdb0bb31bf51b4f0dd6c8658a68296dc8cd30af612205ff4a1bc49",
+  "cuda_runtime": "12.4",
+  "decoder_block_class": "Gemma2DecoderLayer",
+  "decoder_blocks": 42,
+  "decoder_module_path": "model.model.layers",
+  "device": "cuda:0",
+  "eval_mode": true,
+  "final_norm_class": "Gemma2RMSNorm",
+  "frozen_weights": true,
+  "generation": {
+    "assistant_prefill": "",
+    "attention_implementation": "eager",
+    "batch_size": 4,
+    "constrained_decoding": false,
+    "do_sample": false,
+    "length_penalty": 1.0,
+    "max_new_tokens": 160,
+    "num_beams": 1,
+    "pilot_setting": "ordinary full-report decoding",
+    "pilot_source_sha256": "cf217d3e419c42b96c219afd7153d53ac41e7ff8123f4532adb3725a92e403ec",
+    "qwen_enable_thinking": false,
+    "repetition_penalty": 1.0,
+    "sampling_repetitions_independent": false,
+    "seeds": [
+      20261012,
+      20261013
+    ],
+    "use_cache": true,
+    "v100_dtype": "float16"
+  },
+  "gpu": "Tesla V100-PCIE-32GB",
+  "gradient_mode": "torch.inference_mode",
+  "hidden_dimension": 3584,
+  "hostname": "evc12",
+  "logits_keep_argument": "logits_to_keep",
+  "model_class": "Gemma2ForCausalLM",
+  "model_id": "google/gemma-2-9b-it",
+  "packages": {
+    "accelerate": "1.14.0",
+    "numpy": "2.4.6",
+    "safetensors": "0.8.0",
+    "scikit-learn": "1.9.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.6.0+cu124",
+    "transformers": "5.14.1"
+  },
+  "padding_side": "left",
+  "precision": "torch.float16",
+  "primary_assistant_prefill": "",
+  "python": "3.11.5",
+  "replay_native_interface": {
+    "adapter": "exact system + '\\n\\n' + exact user in a single native user turn",
+    "chat_template": "{{ bos_token }}{% if messages[0]['role'] == 'system' %}{{ raise_exception('System role not supported') }}{% endif %}{% for message in messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if (message['role'] == 'assistant') %}{% set role = 'model' %}{% else %}{% set role = message['role'] %}{% endif %}{{ '<start_of_turn>' + role + '\n' + message['content'] | trim + '<end_of_turn>\n' }}{% endfor %}{% if add_generation_prompt %}{{'<start_of_turn>model\n'}}{% endif %}",
+    "chat_template_sha256": "a4722367e313c94c5637c041b6e6139a3a5acaeeb3eeb2e5066c27084b927ce9",
+    "native_system_role_supported": false,
+    "native_template_kwargs": {
+      "add_generation_prompt": true,
+      "tokenize": false
+    },
+    "revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+    "system_role_rejection": "System role not supported",
+    "tokenizer_class": "GemmaTokenizer",
+    "tokenizer_config_sha256": "cb32b7929c62608d46572e813112b3ad8a841fb98fdd6a4da8559e368a951c89"
+  },
+  "snapshot_path": "/home/sa746371/.cache/huggingface/hub/models--google--gemma-2-9b-it/snapshots/11c9b309abf73637e4b6f9a3fa1e92e615547819",
+  "special_tokens": {
+    "bos_token": "<bos>",
+    "eos_token": "<eos>",
+    "mask_token": "<mask>",
+    "pad_token": "<pad>",
+    "unk_token": "<unk>"
+  },
+  "tokenizer_add_special_tokens": false,
+  "tokenizer_class": "GemmaTokenizer",
+  "tokenizer_config_sha256": "cb32b7929c62608d46572e813112b3ad8a841fb98fdd6a4da8559e368a951c89",
+  "tokenizer_revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+  "weights_downloaded": false
+}

@@ -1,0 +1,54 @@
+2026-10-12T17:15:08.474589+00:00 INPUTS_AND_SETTINGS_FROZEN {"greedy": true, "logical_inputs": 300, "manifest_sha256": "c581896b37dbb8fd53569694e7ab87c198ff5c78ae4f27b4f740f2c12bb40353", "max_new_tokens": 160, "native_inputs": 600, "reports": 1200, "review_sample": 180}
+2026-10-12T17:20:38.395023+00:00 LOADING_MODEL {"model": "Qwen/Qwen3-8B", "revision": "b968826d9c46dd6066d109eabc6255188de91218"}
+2026-10-12T17:20:45.649141+00:00 SCHEDULING_RESOURCE_ADJUSTMENT {"gpu": "V10032", "host_memory_gb": 48, "node_pin_removed": true, "reason": "Fit an available GPU slot; no reports existed and decoding/settings remain frozen", "slurm_job": "899923"}
+2026-10-12T17:26:09.434660+00:00 PREFLIGHT_IMPORT_NOTE {"issue": "Login-node AutoTokenizer import exhausted process memory", "model_forward_calls": 0, "phase": "before manifest freeze and before any generations", "resolution": "Validated direct cached tokenizer classes; exact logical strings and native templates unchanged"}
+2026-10-12T17:26:19.788259+00:00 MODEL_READY {"gpu": "Tesla V100-PCIE-32GB", "model": "Qwen/Qwen3-8B", "no_activation_hooks": true, "precision": "torch.float16"}
+2026-10-12T17:26:34.155187+00:00 GENERATION_PROGRESS {"completed": 4, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:27:08.596884+00:00 GENERATION_PROGRESS {"completed": 44, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:27:40.115059+00:00 GENERATION_PROGRESS {"completed": 84, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:28:09.912002+00:00 GENERATION_PROGRESS {"completed": 124, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:28:48.794170+00:00 GENERATION_PROGRESS {"completed": 164, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:29:27.528000+00:00 GENERATION_PROGRESS {"completed": 204, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:30:01.665645+00:00 GENERATION_PROGRESS {"completed": 244, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:30:53.445632+00:00 GENERATION_PROGRESS {"completed": 284, "model": "Qwen/Qwen3-8B", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:31:14.330260+00:00 REPETITION_COMPLETE {"model": "Qwen/Qwen3-8B", "repeat": 0, "reports": 300, "seconds": 294.41}
+2026-10-12T17:31:18.004932+00:00 GENERATION_PROGRESS {"completed": 4, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:31:52.238206+00:00 GENERATION_PROGRESS {"completed": 44, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:31:57.730649+00:00 EARLY_BLINDED_PRIMARY_REVIEW_READY {"partitions": [95, 95, 95], "raw_reports": 300, "selection": "Chronological completed cohort; no error selection; evaluator metadata withheld", "unique_packets": 285}
+2026-10-12T17:32:23.562130+00:00 GENERATION_PROGRESS {"completed": 84, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:32:53.356085+00:00 GENERATION_PROGRESS {"completed": 124, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:33:31.817801+00:00 GENERATION_PROGRESS {"completed": 164, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:34:10.475280+00:00 GENERATION_PROGRESS {"completed": 204, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:34:42.852302+00:00 GENERATION_PROGRESS {"completed": 244, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:35:34.260837+00:00 GENERATION_PROGRESS {"completed": 284, "model": "Qwen/Qwen3-8B", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:35:55.126382+00:00 REPETITION_COMPLETE {"model": "Qwen/Qwen3-8B", "repeat": 1, "reports": 300, "seconds": 280.79}
+2026-10-12T17:35:57.519522+00:00 LOADING_MODEL {"model": "google/gemma-2-9b-it", "revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819"}
+2026-10-12T17:42:38.534165+00:00 MODEL_READY {"gpu": "Tesla V100-PCIE-32GB", "model": "google/gemma-2-9b-it", "no_activation_hooks": true, "precision": "torch.float16"}
+2026-10-12T17:42:44.003611+00:00 GENERATION_PROGRESS {"completed": 4, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:43:37.835623+00:00 PRIMARY_STAGE_A_REVIEW_COMPLETE {"all_rows_span_validated": true, "method": "Codex-assisted blinded full-response review; not human annotation", "unique_task_answer_pairs": 285}
+2026-10-12T17:43:37.837898+00:00 SECONDARY_STAGE_A_REVIEW_STARTED {"ambiguous_groups": 26, "fixed_sample_groups": 90, "independent_reviewers": true, "primary_labels_hidden": true, "unique_packets": 127, "unsupported_positive_groups": 39}
+2026-10-12T17:43:48.554592+00:00 GENERATION_PROGRESS {"completed": 44, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:44:39.910648+00:00 GENERATION_PROGRESS {"completed": 84, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:45:25.471436+00:00 GENERATION_PROGRESS {"completed": 124, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:46:33.942589+00:00 GENERATION_PROGRESS {"completed": 164, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:47:35.703998+00:00 GENERATION_PROGRESS {"completed": 204, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:48:30.641545+00:00 GENERATION_PROGRESS {"completed": 244, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:49:40.433035+00:00 GENERATION_PROGRESS {"completed": 284, "model": "google/gemma-2-9b-it", "repeat": 0, "seed": 20261012, "total": 300}
+2026-10-12T17:50:10.643657+00:00 REPETITION_COMPLETE {"model": "google/gemma-2-9b-it", "repeat": 0, "reports": 300, "seconds": 452.1}
+2026-10-12T17:50:14.169465+00:00 GENERATION_PROGRESS {"completed": 4, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:51:18.143187+00:00 GENERATION_PROGRESS {"completed": 44, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:52:09.281239+00:00 GENERATION_PROGRESS {"completed": 84, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:52:51.225556+00:00 PRIMARY_STAGE_B_REVIEW_STARTED {"partition_sizes": [97, 97, 97], "selection": "Every new unique answer in completed second-model first repetition; no output selection", "unique_packets": 291}
+2026-10-12T17:52:51.227836+00:00 EARLY_SECONDARY_AND_ADJUDICATION_COMPLETE {"adjudication_packets": 28, "method": "Independent Codex-assisted reviews and root adjudication; initial ratings preserved", "second_reviewed_unique_packets": 127, "substantially_unresolved_task_answer_pairs": 4}
+2026-10-12T17:52:54.380879+00:00 GENERATION_PROGRESS {"completed": 124, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:54:02.803893+00:00 GENERATION_PROGRESS {"completed": 164, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:55:04.445638+00:00 GENERATION_PROGRESS {"completed": 204, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:55:59.367883+00:00 GENERATION_PROGRESS {"completed": 244, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:57:09.182482+00:00 GENERATION_PROGRESS {"completed": 284, "model": "google/gemma-2-9b-it", "repeat": 1, "seed": 20261013, "total": 300}
+2026-10-12T17:57:39.344107+00:00 REPETITION_COMPLETE {"model": "google/gemma-2-9b-it", "repeat": 1, "reports": 300, "seconds": 448.69}
+2026-10-12T17:57:42.179069+00:00 GENERATION_COMPLETE {"duplicate_pairs": 600, "empty": 0, "preserved_previous_artifacts": 30, "reports": 1200, "total_pairs": 600, "truncated": 12}
+2026-10-12T17:58:04.716027+00:00 BLINDED_PACKETS_READY {"equivalence": "Only identical complete text and identical author scenario; all 1200 retain their own identity. Primary review labels copied solely to byte-identical task/answer equivalents.", "raw_reports": 1200, "review_partition_sizes": [192, 192, 192], "unique_task_response_packets": 576}
+2026-10-12T18:00:13.837850+00:00 ALL_REPORTS_VALIDATED {"duplicate_pairs": 600, "empty": 0, "models": 2, "policies": 3, "preserved_previous_artifacts": 30, "repetitions": 2, "reports": 1200, "tasks": 100, "truncated": 12}
+2026-10-12T18:00:13.840235+00:00 PRIMARY_FULL_RESPONSE_REVIEW_COMPLETE {"covered_reports": 1200, "method": "Codex-assisted, model/policy/repetition metadata omitted", "unique_author_task_answer_pairs": 576}
+2026-10-12T18:00:13.842283+00:00 FINAL_SECONDARY_REVIEW_STARTED {"all_secondary_unique_packets": 258, "all_target_claim_header_positives_and_ambiguous_included": true, "frozen_random_response_ids": 180, "remaining_packets": 131}
+2026-10-12T18:18:24.574668+00:00 FINAL_REPLAY_COMPLETE {"adjudicated_pairs": 95, "duplicate_pairs": 600, "frozen_sample_reviewed": 180, "full_reports": 1188, "honest_disclosure_plus_unsupported_claim_reports": 22, "independent_second_review_pairs": 263, "primary_unique_pairs": 576, "prior_artifacts_unchanged": 30, "raw_jsonl_sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016", "reports": 1200, "scored_jsonl_sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be", "summary_png_sha256": "a3292325d4e6a18252bbecdc561ffa9e01dafd2ec7a4f4c5e9ed311913142ef0", "truncated": 12, "unresolved_pairs": 23}

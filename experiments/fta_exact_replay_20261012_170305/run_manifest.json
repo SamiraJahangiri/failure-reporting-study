@@ -1,0 +1,272 @@
+{
+  "bundle_zip_sha256": "7a00ca5e2167def93466a81b797ab038ef7e83b61d3f028c2cad0154bf58b28f",
+  "causal_limit": "Pressure groups have different task contents; no pressure-only causal attribution.",
+  "code_sha256": {
+    "fta_exact_replay.py": "044ed875129788e77f50ebc3e35838122b837f351e237da5e99c5bbb48d134be",
+    "fta_exact_replay_scoring.py": "83958628adfb87f6a23a8dc84dfd8a1bb684066472fc9b1dae33aa0bf8c54b6c",
+    "fta_exact_replay_verify.py": "c688c77bfbaa469298be606a1f7ed27fd77a48ce4d1138f68a3c6ea4fa38e658"
+  },
+  "decoding": {
+    "assistant_prefill": "",
+    "attention_implementation": "eager",
+    "batch_size": 4,
+    "constrained_decoding": false,
+    "do_sample": false,
+    "length_penalty": 1.0,
+    "max_new_tokens": 160,
+    "num_beams": 1,
+    "pilot_setting": "ordinary full-report decoding",
+    "pilot_source_sha256": "cf217d3e419c42b96c219afd7153d53ac41e7ff8123f4532adb3725a92e403ec",
+    "qwen_enable_thinking": false,
+    "repetition_penalty": 1.0,
+    "sampling_repetitions_independent": false,
+    "seeds": [
+      20261012,
+      20261013
+    ],
+    "use_cache": true,
+    "v100_dtype": "float16"
+  },
+  "frozen_at": "2026-10-12T17:15:08.358087+00:00",
+  "models": {
+    "Qwen/Qwen3-8B": "b968826d9c46dd6066d109eabc6255188de91218",
+    "google/gemma-2-9b-it": "11c9b309abf73637e4b6f9a3fa1e92e615547819"
+  },
+  "native_inputs_sha256": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f",
+  "native_templates": {
+    "Qwen/Qwen3-8B": {
+      "adapter": null,
+      "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and message.content is string and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if message.content is string %}\n        {%- set content = message.content %}\n    {%- else %}\n        {%- set content = '' %}\n    {%- endif %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+      "chat_template_sha256": "41d5929bf73796beb66809ac700b2cf3ff81694f933e5c14d52b7fd6963c947d",
+      "native_system_role_supported": true,
+      "native_template_kwargs": {
+        "add_generation_prompt": true,
+        "enable_thinking": false,
+        "tokenize": false
+      },
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "system_role_rejection": null,
+      "tokenizer_class": "Qwen2Tokenizer",
+      "tokenizer_config_sha256": "d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101"
+    },
+    "google/gemma-2-9b-it": {
+      "adapter": "exact system + '\\n\\n' + exact user in a single native user turn",
+      "chat_template": "{{ bos_token }}{% if messages[0]['role'] == 'system' %}{{ raise_exception('System role not supported') }}{% endif %}{% for message in messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if (message['role'] == 'assistant') %}{% set role = 'model' %}{% else %}{% set role = message['role'] %}{% endif %}{{ '<start_of_turn>' + role + '\n' + message['content'] | trim + '<end_of_turn>\n' }}{% endfor %}{% if add_generation_prompt %}{{'<start_of_turn>model\n'}}{% endif %}",
+      "chat_template_sha256": "a4722367e313c94c5637c041b6e6139a3a5acaeeb3eeb2e5066c27084b927ce9",
+      "native_system_role_supported": false,
+      "native_template_kwargs": {
+        "add_generation_prompt": true,
+        "tokenize": false
+      },
+      "revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+      "system_role_rejection": "System role not supported",
+      "tokenizer_class": "GemmaTokenizer",
+      "tokenizer_config_sha256": "cb32b7929c62608d46572e813112b3ad8a841fb98fdd6a4da8559e368a951c89"
+    }
+  },
+  "planned_reports": 1200,
+  "policies": 3,
+  "preservation_manifest_sha256": "d1b09ae6fbcdac712af283cb6f5ad9d0f4580af3201d93edecd4e84e4680ca2c",
+  "repetitions": 2,
+  "review_plan_sha256": "2b34c9c2de9e2e746f8ee72c6f0a1e4ff48e405c69b528117ebe208ab2c7fc31",
+  "scope": "All100 original FTA failed-evidence tasks. Only supplied system and user strings model-visible. No success/recovery histories, new tasks, activation extraction, interventions, or desired-output retries.",
+  "scoring": "Six independent original rubric labels and overlapping reporting diagnostics with exact response evidence spans; Codex-assisted review, not human annotations. Full-response primary review; fixed180 outcome-blind re-review sample plus flagged/ambiguous cases.",
+  "source_reproduction_limit": "Exact released v0.3.0 task/policy/message strings on different local models and documented native interfaces. Public release model judging differs from later paper human scoring; no claim to reproduce published human scores.",
+  "source_verification": {
+    "category_counts": {
+      "execution_failed": 20,
+      "missing_attachment": 20,
+      "permission_denied": 20,
+      "stale_data": 20,
+      "web_unavailable": 20
+    },
+    "evaluator_fields_not_passed_to_formatter": [
+      "category",
+      "difficulty",
+      "fabricated_claims",
+      "pressure_type",
+      "recovery_hint",
+      "required_evidence",
+      "safe_partial_help",
+      "schema_version",
+      "task_domain"
+    ],
+    "exact_author_system_user_equality": true,
+    "exact_five_field_tool_traces": true,
+    "files_written": false,
+    "inference_ran": false,
+    "location": "/lustre/fs1/home/sa746371/ICPRAM/fta_exact_replay_20261012_170305/fta_exact_tasks",
+    "logical_input_count": 300,
+    "manifest_sha256": "bc7474326a7d5cb559972c615c9b4c0bbc03fa1a883dbfa3255314ccd9c62613",
+    "model_visible_fields": [
+      "system",
+      "user"
+    ],
+    "offline_source_execution": "Audited pure formatter function ASTs only; no provider imports; empty builtins; observable-only request objects",
+    "pressure_counts": {
+      "conceal_failure": 20,
+      "expected_answer": 20,
+      "forced_choice": 20,
+      "neutral": 20,
+      "urgency": 20
+    },
+    "record_count": 100,
+    "reproduction_limit": "Exact released record bytes and logical policy/message strings; native model templating, generation settings, and evaluation provenance remain separate.",
+    "tool_status_counts": {
+      "denied": 20,
+      "error": 40,
+      "missing": 20,
+      "stale": 20
+    },
+    "verification_version": "fta-exact-replay-verifier-v1",
+    "verified": true,
+    "verified_files": {
+      "README.txt": {
+        "bytes": 1310,
+        "sha256": "37e33e75b9c0d24b61151bc37fc62039a4b086250883b7fc81812e17639a37a8",
+        "verified": true
+      },
+      "codex_prompt.txt": {
+        "bytes": 7699,
+        "sha256": "fa8b415e694df42d2531360a20433ca167541f80cb1447fa95785b550465087c",
+        "verified": true
+      },
+      "conditions.json": {
+        "bytes": 826,
+        "sha256": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1",
+        "verified": true
+      },
+      "data/confirmatory_scenarios.jsonl": {
+        "bytes": 96765,
+        "sha256": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea",
+        "verified": true
+      },
+      "model_inputs.jsonl": {
+        "bytes": 248974,
+        "sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+        "verified": true
+      },
+      "upstream/LICENSE": {
+        "bytes": 1066,
+        "sha256": "bb86fab5273b6e8e01b40b93f79be9085f0001fc1319a8c671f261fd97ca6b56",
+        "verified": true
+      },
+      "upstream/docs/annotation_guide.md": {
+        "bytes": 6790,
+        "sha256": "f2658e2759593349075019b0316954ea019a2a2a69c895d22b60a1f96afe2f24",
+        "verified": true
+      },
+      "upstream/src/failure_transparent_agents/conditions.py": {
+        "bytes": 1333,
+        "sha256": "0baf43cc5a7afe2b62c68923ff465fe29e9ef9e5937b89508bf7e2969ee37f4f",
+        "verified": true
+      },
+      "upstream/src/failure_transparent_agents/prompting.py": {
+        "bytes": 1081,
+        "sha256": "1150fa52fcb2586024c511af380ed3f72f3aa991a74dc742716d6cfec3ef5c13",
+        "verified": true
+      }
+    }
+  },
+  "supplied_inputs_sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+  "tasks": 100,
+  "technical_failure_rule": "Empty/technical failures and length-truncated reports saved and excluded from ordinary-valid-answer denominators. Visible claims may be reviewed but missing tails remain unknown.",
+  "version": "fta-exact-replay-v1",
+  "zip_verification": {
+    "archive_sha256": "7a00ca5e2167def93466a81b797ab038ef7e83b61d3f028c2cad0154bf58b28f",
+    "category_counts": {
+      "execution_failed": 20,
+      "missing_attachment": 20,
+      "permission_denied": 20,
+      "stale_data": 20,
+      "web_unavailable": 20
+    },
+    "evaluator_fields_not_passed_to_formatter": [
+      "category",
+      "difficulty",
+      "fabricated_claims",
+      "pressure_type",
+      "recovery_hint",
+      "required_evidence",
+      "safe_partial_help",
+      "schema_version",
+      "task_domain"
+    ],
+    "exact_author_system_user_equality": true,
+    "exact_five_field_tool_traces": true,
+    "files_written": false,
+    "inference_ran": false,
+    "location": "/lustre/fs1/home/sa746371/ICPRAM/fta_exact_replay_20261012_170305/fta_exact_tasks.zip",
+    "logical_input_count": 300,
+    "manifest_sha256": "bc7474326a7d5cb559972c615c9b4c0bbc03fa1a883dbfa3255314ccd9c62613",
+    "model_visible_fields": [
+      "system",
+      "user"
+    ],
+    "offline_source_execution": "Audited pure formatter function ASTs only; no provider imports; empty builtins; observable-only request objects",
+    "pressure_counts": {
+      "conceal_failure": 20,
+      "expected_answer": 20,
+      "forced_choice": 20,
+      "neutral": 20,
+      "urgency": 20
+    },
+    "record_count": 100,
+    "reproduction_limit": "Exact released record bytes and logical policy/message strings; native model templating, generation settings, and evaluation provenance remain separate.",
+    "tool_status_counts": {
+      "denied": 20,
+      "error": 40,
+      "missing": 20,
+      "stale": 20
+    },
+    "verification_version": "fta-exact-replay-verifier-v1",
+    "verified": true,
+    "verified_files": {
+      "README.txt": {
+        "bytes": 1310,
+        "sha256": "37e33e75b9c0d24b61151bc37fc62039a4b086250883b7fc81812e17639a37a8",
+        "verified": true
+      },
+      "codex_prompt.txt": {
+        "bytes": 7699,
+        "sha256": "fa8b415e694df42d2531360a20433ca167541f80cb1447fa95785b550465087c",
+        "verified": true
+      },
+      "conditions.json": {
+        "bytes": 826,
+        "sha256": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1",
+        "verified": true
+      },
+      "data/confirmatory_scenarios.jsonl": {
+        "bytes": 96765,
+        "sha256": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea",
+        "verified": true
+      },
+      "model_inputs.jsonl": {
+        "bytes": 248974,
+        "sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+        "verified": true
+      },
+      "upstream/LICENSE": {
+        "bytes": 1066,
+        "sha256": "bb86fab5273b6e8e01b40b93f79be9085f0001fc1319a8c671f261fd97ca6b56",
+        "verified": true
+      },
+      "upstream/docs/annotation_guide.md": {
+        "bytes": 6790,
+        "sha256": "f2658e2759593349075019b0316954ea019a2a2a69c895d22b60a1f96afe2f24",
+        "verified": true
+      },
+      "upstream/src/failure_transparent_agents/conditions.py": {
+        "bytes": 1333,
+        "sha256": "0baf43cc5a7afe2b62c68923ff465fe29e9ef9e5937b89508bf7e2969ee37f4f",
+        "verified": true
+      },
+      "upstream/src/failure_transparent_agents/prompting.py": {
+        "bytes": 1081,
+        "sha256": "1150fa52fcb2586024c511af380ed3f72f3aa991a74dc742716d6cfec3ef5c13",
+        "verified": true
+      }
+    }
+  }
+}

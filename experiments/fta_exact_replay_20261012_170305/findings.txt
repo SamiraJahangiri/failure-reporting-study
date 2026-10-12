@@ -1,0 +1,28 @@
+Exact original FTA replay — final findings
+All 100 unchanged author tasks and exact failed observations; supplied 300 model_inputs.jsonl rows and three original policies.
+Qwen3-8B and Gemma-2-9b-it: 1,200 generated reports. All 600 greedy repetition pairs are duplicates, not independent samples.
+1,188 full outputs; 12 length-truncated evidence-contract outputs excluded (Qwen 2, Gemma 10). No empty answers or technical errors.
+Native Qwen system/user template; native Gemma exact-policy + two-newline + exact-user adapter after documented system-role rejection.
+No prompt softening, added reminders, forced report labels, assistant prefill, new tasks, success cases, probes, or activation interventions.
+
+Counts below use full answers with resolved labels; substantial ambiguity is excluded per label.
+Qwen/Qwen3-8B
+  baseline: false_completion_claim=50/196 (unresolved=4), fabricated_requested_facts=58/200 (unresolved=0), honest_failure_disclosure=150/200 (unresolved=0), contradictory_headers=0/200 (unresolved=0)
+  transparency: false_completion_claim=40/198 (unresolved=2), fabricated_requested_facts=48/200 (unresolved=0), honest_failure_disclosure=154/200 (unresolved=0), contradictory_headers=0/200 (unresolved=0)
+  evidence_contract: false_completion_claim=0/198 (unresolved=0), fabricated_requested_facts=0/198 (unresolved=0), honest_failure_disclosure=198/198 (unresolved=0), contradictory_headers=0/198 (unresolved=0)
+google/gemma-2-9b-it
+  baseline: false_completion_claim=12/200 (unresolved=0), fabricated_requested_facts=16/200 (unresolved=0), honest_failure_disclosure=176/198 (unresolved=2), contradictory_headers=0/200 (unresolved=0)
+  transparency: false_completion_claim=6/200 (unresolved=0), fabricated_requested_facts=14/200 (unresolved=0), honest_failure_disclosure=176/200 (unresolved=0), contradictory_headers=0/200 (unresolved=0)
+  evidence_contract: false_completion_claim=0/190 (unresolved=0), fabricated_requested_facts=0/190 (unresolved=0), honest_failure_disclosure=190/190 (unresolved=0), contradictory_headers=0/190 (unresolved=0)
+
+Unsupported reporting occurred naturally under baseline and transparency. Examples include forced-choice results without a file or current record, guessed deadlines/versions, and invented counts.
+No unsupported completion or requested-fact claim was identified in the full evidence-contract outputs. Gemma nonetheless invented an auxiliary expiration-age detail in two repeated contract reports: snapshot age was treated as time since policy expiration.
+22 full reports contain both an honest failure disclosure and an unsupported claim. No wrong or contradictory completion header was observed.
+All six original rubric labels and four overlapping diagnostics, plus wrong-header flags, are retained with exact spans and uncertainty in scored_reports.jsonl.
+Primary review: 576 distinct author-task/full-answer pairs covering all 1,200 reports. Duplicate annotation reuse requires identical task and byte-identical full text.
+Independent second review: 263 pairs, including all frozen 180 sampled reports, all target unsupported/header positives, all over-refusal positives, and all primary ambiguity.
+95 pairs adjudicated; 23 pairs retain substantial unresolved labels. All original independent ratings and disagreements are preserved.
+Scoring is Codex-assisted, not human annotation. Separate agent contexts are not independent judge-model families. Root knew the early cohort model during adjudication; model/policy/repeat metadata are omitted from scoring packets.
+Exact released task/prompt replay on different local models; not reproduction of the later paper human scores. Pressure groups contain different tasks, so differences are not pressure-only causal effects.
+All scenarios lack required successful evidence: no estimate of rejecting genuine success, and no internal-mechanism conclusion.
+All 30 preserved pilot/diagnostic artifact hashes are unchanged. Summary PNG, readable complete-report log, raw JSONL, rendered native inputs, frozen settings, review files and grouped counts are saved here.

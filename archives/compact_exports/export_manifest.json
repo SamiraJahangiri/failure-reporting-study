@@ -1,0 +1,322 @@
+{
+  "archive_status": "Exploratory pilot and diagnostic; distinct from exact task replay.",
+  "counts": {
+    "diagnostic_contexts": 384,
+    "diagnostic_reports": 768,
+    "diagnostic_unique_prompts": 384,
+    "pilot_original_scenarios": 100,
+    "pilot_probe_predictions": 46800,
+    "pilot_reports": 13680,
+    "pilot_scenarios": 1500,
+    "pilot_summaries": 4,
+    "pilot_unique_prompts": 6000
+  },
+  "excluded_originals": {
+    "fta_diagnostic_pilot_scores.csv": "Large provisional automated scoring payload file omitted; original SHA-256 recorded when available; corrections/manual scores are separate.",
+    "fta_diagnostic_results.csv": "Mixed CSV replaced by reports, deduplicated prompts and contexts; prefills and provisional score payloads omitted.",
+    "fta_results.csv": "Large mixed CSV replaced by these faithful exports."
+  },
+  "exports": {
+    "diagnostic_contexts.jsonl": {
+      "bytes": 712536,
+      "sha256": "9a3f12f8b65c817018ba9ac55214890d98b7c5b65232ae6944181a210cf00a4d"
+    },
+    "diagnostic_prompts.jsonl.gz": {
+      "bytes": 57584,
+      "sha256": "fd3862383dec6c684be374baf58b7c5d0f567380e8e10e54ee1c401358dfbfbe"
+    },
+    "diagnostic_reports.jsonl": {
+      "bytes": 1143314,
+      "sha256": "3bb6861f080388e66550a426b8e7323602c16798f1d4e92e284239f041f15645"
+    },
+    "export_archives.py": {
+      "bytes": 16322,
+      "sha256": "25bc1adc454236bf722aed9b5fef9698007166166560804508fae2915d0e4f3b"
+    },
+    "pilot_original_scenarios.jsonl": {
+      "bytes": 105403,
+      "sha256": "c74d73c4457d7b01cb61af33ca3a04c958dcd43071e390e730867f105a4a00fa"
+    },
+    "pilot_probe_predictions.csv.gz": {
+      "bytes": 838195,
+      "sha256": "3ffd0a19de26a3353a3ce5c9637cac9b7571ca01d752405943ac1be72e01728e"
+    },
+    "pilot_prompts.jsonl.gz": {
+      "bytes": 855114,
+      "sha256": "e460d9b5febd2e69082db8f10b6ec72a9560699cd3b48bcf9230264ff5c6e3e8"
+    },
+    "pilot_reports_gemma_2_9b_it.jsonl": {
+      "bytes": 7282273,
+      "sha256": "0ad59ce1c2e917cfe27cfbe71d509dca5a280cf762fd7f72e2bf4314886b0df2"
+    },
+    "pilot_reports_qwen3_8b.jsonl": {
+      "bytes": 7495390,
+      "sha256": "56a723dd9f83427af6303ec2659065dd51b59a6db8582a12cb129acb9c5dd9cb"
+    },
+    "pilot_scenarios.jsonl.gz": {
+      "bytes": 41062,
+      "sha256": "bc8150793eb3532b90118b0bb94954ef4f06492b371a3b628884f89299fc6cdc"
+    },
+    "pilot_summaries.jsonl": {
+      "bytes": 249362,
+      "sha256": "2c3f8d8f160a789ce8daf0826d428da595e68e1bf9d3e796dc46c13f86a73c85"
+    }
+  },
+  "pilot_reports_by_model": {
+    "Qwen/Qwen3-8B": {
+      "count": 6840,
+      "file": "pilot_reports_qwen3_8b.jsonl",
+      "source_fingerprints": [
+        "14c5720c3f04994bfddb72d299160e6b58da408d229f054787a972808c0452b3"
+      ]
+    },
+    "google/gemma-2-9b-it": {
+      "count": 6840,
+      "file": "pilot_reports_gemma_2_9b_it.jsonl",
+      "source_fingerprints": [
+        "463d106d401a35de704e3881a43143fb60389230a22251a22951f69ae967c9a7"
+      ]
+    }
+  },
+  "pilot_tracks": [
+    {
+      "count": 60,
+      "intervention": "donor",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "donor",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 60,
+      "intervention": "identity",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "identity",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 3000,
+      "intervention": "none",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 60,
+      "intervention": "paired_unmodified",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "paired_unmodified",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 120,
+      "intervention": "paired_unmodified_policy",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 360,
+      "intervention": "paired_unmodified_policy",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 300,
+      "intervention": "random",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 900,
+      "intervention": "random",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 60,
+      "intervention": "targeted",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "targeted",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 300,
+      "intervention": "targeted_random",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": false
+    },
+    {
+      "count": 900,
+      "intervention": "targeted_random",
+      "model": "Qwen/Qwen3-8B",
+      "status_only": true
+    },
+    {
+      "count": 60,
+      "intervention": "donor",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "donor",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 60,
+      "intervention": "identity",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "identity",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 3000,
+      "intervention": "none",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 60,
+      "intervention": "paired_unmodified",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "paired_unmodified",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 120,
+      "intervention": "paired_unmodified_policy",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 360,
+      "intervention": "paired_unmodified_policy",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 300,
+      "intervention": "random",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 900,
+      "intervention": "random",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 60,
+      "intervention": "targeted",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 180,
+      "intervention": "targeted",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    },
+    {
+      "count": 300,
+      "intervention": "targeted_random",
+      "model": "google/gemma-2-9b-it",
+      "status_only": false
+    },
+    {
+      "count": 900,
+      "intervention": "targeted_random",
+      "model": "google/gemma-2-9b-it",
+      "status_only": true
+    }
+  ],
+  "schema_version": "1.0",
+  "schemas": {
+    "diagnostic_contexts": "Unique original context keyed by context_key; repeated logical prompt replaced by original prompt_sha256.",
+    "diagnostic_prompts": "Unique prompt_sha256 and exact logical prompt; UTF-8 JSONL in deterministic gzip.",
+    "diagnostic_reports": "CSV scalar metadata + revision/protocol/context hashes + report excluding repeated native prefill; both answer text fields unchanged. Old rule-based score payload omitted.",
+    "pilot_original_scenarios": "Source key/fingerprint and original author scenario payload.",
+    "pilot_probe_predictions": "All 46,800 original scalar predictions, metadata and probabilities in deterministic gzip CSV; no activation arrays.",
+    "pilot_prompts": "Unique prompt_sha256 and exact prompt; UTF-8 JSONL in deterministic gzip.",
+    "pilot_reports": "CSV scalar metadata + generation payload excluding prompt and old score; per-model source fingerprint is stored once in pilot_reports_by_model. Donor is a small provenance mapping. Both response and raw_generated_text are unchanged. No recorded EOS reason is synthesized.",
+    "pilot_scenarios": "Source key/fingerprint and original generated scenario payload, in deterministic gzip JSONL.",
+    "pilot_summaries": "Source key/fingerprint and all original summary payload fields."
+  },
+  "source_files": {
+    "fta_diagnostic_pilot_scores.csv": {
+      "bytes": 28330549,
+      "sha256": "04fbce3b1a3a5fe1a6e6cea26a43d5e35bf50a14f90b4c087324c0787d34d5db"
+    },
+    "fta_diagnostic_results.csv": {
+      "bytes": 6127791,
+      "sha256": "1629404363ec6bc2b10666a694a58a9ce5d422f672b3d694c024a53b455c2f52"
+    },
+    "fta_results.csv": {
+      "bytes": 57870837,
+      "sha256": "41158e7f5123f064267fa14565b98ac1fc430accfbd7396c04d65eab8d3c5d19"
+    }
+  },
+  "source_record_counts": {
+    "fta_diagnostic_results.csv": {
+      "confirmation": 288,
+      "main": 480
+    },
+    "fta_results.csv": {
+      "original_scenario": 100,
+      "prediction": 13680,
+      "probe_prediction": 46800,
+      "scenario": 1500,
+      "summary": 4
+    }
+  },
+  "transformations": [
+    "Sources are read-only; report text is neither edited nor rescored.",
+    "Repeated logical prompts are deduplicated by SHA-256 and retained losslessly.",
+    "Native prefill strings are omitted from diagnostic rows; exact prefill SHA-256 remains.",
+    "Old provisional rule-based score payloads are omitted; corrected/manual scoring is published separately.",
+    "All probe prediction rows are retained as scalar CSV; activations and checkpoints are excluded.",
+    "JSON formatting and row ordering are deterministic; gzip timestamp and embedded filename are fixed."
+  ],
+  "validation": {
+    "all_probe_rows_retained": true,
+    "all_prompt_hashes_resolve": true,
+    "answer_hashes_match_round_trip": true,
+    "diagnostic_report_keys_unique": true,
+    "each_export_under_10_MB": true,
+    "export_bytes_before_manifest": 18796555,
+    "pilot_report_keys_unique": true,
+    "previous_artifacts_checked": 30,
+    "previous_artifacts_unchanged": true,
+    "source_files_unchanged": true
+  }
+}

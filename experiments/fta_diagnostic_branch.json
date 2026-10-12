@@ -1,0 +1,10 @@
+{
+  "frozen_before_confirmation": true,
+  "main_predictions": 480,
+  "preserved_pilot_header_cases": 8,
+  "research_question": "Why do models make substantive outcome claims that their observed evidence does not support?",
+  "review_sha256": "7489dc2cb3232f636b2069234d29ef1b4e86cd3ab189dcc578be5fc54c465402",
+  "route": "unsupported",
+  "unsupported_body": 21,
+  "wrong_headers_with_honest_failure": 1
+}
