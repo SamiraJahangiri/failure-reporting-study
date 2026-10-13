@@ -1,83 +1,84 @@
 # Failure reporting study
 
-Lightweight research code and auditable results for failure reporting by Qwen3-8B and Gemma-2-9b-it. The main result is an **exact replay of all 100 released Failure-Transparent Agents (FTA) tasks**, under the three original policies, on these two local models: **100 × 3 × 2 models × 2 repetitions = 1,200 reports**.
+A compact replay of the unchanged **Failure-Transparent Agents v0.3.0** dataset: 100 tasks, the authors' three instruction policies, and 300 frozen system/user inputs per model. Each supplied tool observation lacks the evidence needed to establish the requested outcome.
 
-This is an exact released-task and logical-prompt replay with **Codex-assisted scoring**, not human annotation or a reproduction of the paper's published human scores. Earlier pilots and diagnostic extensions are archived separately.
+The completed Qwen3-8B and Gemma-2-9b-it replay is preserved. Its two greedy repetitions were identical, so comparisons select repetition 0: 300 answers per model. Their existing labels are reused without scoring them again. New official models generate one report per task/policy. New answers receive one Codex-assisted full-answer rubric review; this is not independent human annotation or reproduction of the authors' published human scores.
 
-## Exact replay results
+## Current scope
 
-Twelve length-truncated evidence-contract reports are retained but excluded from ordinary full-answer rates: two Qwen and ten Gemma reports. This leaves **598 Qwen and 590 Gemma full answers**, with no empty answers or technical errors. All 600 repetition pairs are byte-identical under frozen greedy decoding; repetitions are not independent samples.
+Only the original tasks, failed-tool observations, policies, and message formatting are used. No rewritten questions, added reminders, synthetic success/recovery histories, probes, or activation interventions are part of this phase. Model-native chat templates encode the frozen system/user strings. Only the original evidence-contract instruction requests structured reporting; ordinary answers are not forced to use status labels.
 
-| Model | Baseline: fabricated requested facts | Transparency: fabricated requested facts | Evidence contract: fabricated requested facts |
+[Model pins and decoding settings](config/models.json), [source hashes](config/source.json), [saved answers](results/answers.jsonl), and [saved labels](results/labels.jsonl) are the primary records. [The summary](results/summary.json) records denominators and uncertainty. [Exact examples](results/examples.txt) contain full copied instructions, requests, tool observations, and evaluated answers.
+
+## Completed results
+
+Ministral 3 8B generated **300 new answers** on Newton using its official pinned checkpoint and native Mistral Common template. All 300 ended normally; none were truncated. They were scored once. Combined with 600 reused Qwen/Gemma answers, the comparison contains 900 distinct model/task/policy inputs. All 1,200 historical Qwen/Gemma reports remain preserved separately.
+
+The table shows positive judgments / valid answers with resolved judgments, in **baseline / transparency / evidence-contract** order. A label concerns an answer, not a fraction of its words. Missing or unresolved judgments are not counted as negative. The figure's “Recovery step” counts a suggested next action in the answer.
+
+| Model | Unsupported success | Invented details | Failure disclosed |
 | --- | --- | --- | --- |
-| Qwen3-8B | 58/200 (29%) | 48/200 (24%) | 0/198 (0%) |
-| Gemma-2-9b-it | 16/200 (8%) | 14/200 (7%) | 0/190 (0%) |
+| Qwen3-8B | 25/98 · 20/98 · 0/99 | 29/100 · 24/100 · 0/99 | 75/100 · 77/100 · 99/99 |
+| Gemma-2-9b-it | 8/99 · 6/100 · 0/95 | 9/100 · 8/100 · 1/95 | 88/99 · 88/100 · 95/95 |
+| Ministral 3 8B | 31/100 · 23/100 · 0/100 | 50/99 · 36/99 · 4/99 | 77/100 · 80/100 · 100/100 |
 
-Unsupported requested facts appeared in naturally generated baseline and transparency replies, including selected answer choices, guessed dates or versions, and invented counts. No unsupported completion or requested-fact claim was identified in full evidence-contract answers. Gemma did invent an **auxiliary expiration-age detail in two repeated contract reports**; zero requested-fact fabrication is therefore not zero fabrication of every kind.
+The evidence contract reduced unsupported success reports in these saved answers, but it did not remove every invented detail. For Ministral, invented **requested facts** were separately flagged in 38/99 baseline, 22/98 transparency, and 1/99 resolved evidence-contract answers. Some invented details concern other assertions. One answer can both admit failure and supply an unsupported answer: the saved resume example says no document was provided, then confirms the user's suggested employer as though it were listed in that resume.
 
-Twenty-two full reports both admitted failure and made an unsupported claim. No wrong completion header or header/explanation contradiction was observed in this replay. Flags overlap, and unresolved labels are excluded separately from each label's rate.
+![Original FTA rubric comparison](results/summary.png)
 
-![Exact replay summary](experiments/fta_exact_replay_20261012_170305/summary.png)
+The figure excludes six truncated historical answers and excludes unresolved judgments separately for each label. These Codex-assisted labels and differing old/new token limits do not establish an internal mechanism or a controlled ranking of the models.
 
-The review covered all 1,200 reports through 576 distinct author-task/answer groups; labels were reused only for the same task and byte-identical full answer. A separate Codex context reviewed 263 groups, including the frozen 180-report sample, target claim/header positives, over-refusal positives, and primary ambiguities. Ninety-five groups were adjudicated; 23 retain unresolved labels. Review packets omitted model, policy, and repetition metadata, although the coordinating reviewer knew the early cohort's model. Separate agent contexts are not independent judge-model families.
+## Blocked models
 
-Read the [findings](experiments/fta_exact_replay_20261012_170305/findings.txt), [summary counts](experiments/fta_exact_replay_20261012_170305/summary.json), and [run manifest](experiments/fta_exact_replay_20261012_170305/run_manifest.json) for denominators, uncertainty, interfaces, and frozen settings. Raw responses, rendered native prompts, review packets and ratings, evidence spans, and scored reports are included in the same directory.
+**Llama 3.1 8B Instruct: 0/300 answers.** The official pinned repository returned HTTP 403 with both available Hugging Face credential slots, and approved cached weights were not found. [The access record](results/blocker_llama3_1_8b.json) contains the failure without credentials.
 
-## What was replayed
+**Nemotron 3 Super 120B BF16: 0/300 answers.** Its official weights are cached and all 300 native inputs were checked. [NVIDIA specifies eight H100-80GB GPUs](https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16); Newton's eligible nodes were occupied. The [Slurm resource check](results/nemotron_resources.json) estimated October 16, 2026 at 11:39:58 EDT, several days after this run. This is an estimate, not a reservation. The held generation job was cancelled before allocation or model loading. Native-kernel setup and its compatibility checks are recorded separately; no smaller or quantized checkpoint was substituted.
 
-The bundled inputs preserve the [FTA v0.3.0 release](https://github.com/junru-zhu/failure-transparent-agents/tree/v0.3.0): all 100 source records, the `baseline`, `transparency`, and `evidence_contract` policy strings, and 300 logical system/user inputs. Only the supplied `system` and `user` strings were model-visible. Evaluator fields were excluded. No pressure softening, added reminders, forced success/failure answers, assistant prefill, new tasks, success cases, probes, interventions, or desired-answer retries were added. The evidence contract retained its original `STATUS`, `EVIDENCE`, `LIMITATION`, and `NEXT_ACTION` fields, including `BLOCKED`.
+[Cache/input readiness](results/nemotron_readiness.json) records the 50 official shards and native-template checks. [Runtime setup](results/nemotron_runtime_setup.json) records source builds and compatibility checks, including failed attempts. Native fast kernels are also **unverified**: Mamba 2.3.2's import failed with the installed Triton, and the compatible 2.3.1 source build was stopped before installation once the multi-day GPU blocker was confirmed. Its required GPU guard has not passed. Runtime readiness is separate from obtaining the required GPU allocation.
 
-Qwen used its native system/user chat template with thinking disabled. Gemma's native template rejected the system role, so its first native user turn contained the exact policy, two newlines, and the exact author user message. The [original execution instruction](experiments/fta_exact_replay_20261012_170305/fta_exact_tasks/codex_prompt.txt) and manifest document this interface difference from the authors' models. Decoding used `do_sample=False`, a 160-token output limit, batch size four, and two fixed seeds.
+The intended expansion was 900 new answers across three models. **300 new answers actually ran**; the two blocked models have no error-rate estimates and no bars in the figure. Their pinned settings and the generation pipeline remain available for a later run when access and resources permit.
 
-All original tasks lack the required successful evidence. This replay cannot estimate rejection of genuine success or identify an internal mechanism. The rubric's `over_refusal` label concerns withheld useful partial help. Pressure groups contain different task contents, so their differences do not establish pressure-only causal effects. The released model-judging workflow and the later paper's human scoring are distinct sources of evaluation provenance.
+## Layout
 
-## Repository contents
+- `data/`: unchanged original dataset, supplied logical inputs, annotation guide, and original formatter/policy source for verification.
+- `config/`: unchanged policy strings, pinned source/model metadata, archive and preservation records, scheduler settings.
+- `utils/`: five helper modules for IO, input verification, native models, inference runtime, and scoring/report aggregation.
+- `pipelines/`: three entry points for preparation, generation, and scoring/reporting.
+- `results/`: consolidated comparison answers/labels, model manifests, summary, figure, exact examples, and immutable completed replay in `preserved_exact/`.
 
-- `experiments/fta_exact_replay_20261012_170305/`: the frozen exact replay, upstream task bundle and MIT license, inference/review code, full raw and scored JSONL, review provenance, logs, grouped counts, and figure.
-- `experiments/fta_experiment.py`: unchanged legacy pilot code. Its forced `STATUS` interface, synthetic success/failure/recovery histories, probes, and activation interventions belong to the pilot, not the exact replay.
-- `experiments/fta_diagnostic*`: later diagnostic code and small result archives using synthetic success/recovery controls, original and softened pressure variants, and reminder toggles. These are separate experiments with separate scopes.
-- `archives/compact_exports/`: compact earlier pilot/diagnostic exports, source SHA-256 hashes, and export scripts. The roughly 58 MB, 28 MB, and 6 MB source CSVs are omitted; these exports do not replace the full exact-replay archive. The pilot score export retains all 13,680 scoring rows, including 215 cases with assisted manual corrections; the remaining lexical scores are provisional, and no absent confidence ratings were invented.
-- `scripts/`: public offline verification and preparation of a new inference run.
+Obsolete custom pilots, diagnostics, intervention code, historical review campaigns, and duplicate exports are recoverable outside the active project at `newton:/lustre/fs1/home/sa746371/fta_project_archive`. [Archive metadata](config/archive.json) describes recovery. The previous public Git history is retained; this refactor uses a normal commit, not a history rewrite. Model caches and the original inference environment are preserved outside the repository.
 
-The archived `private_*` filenames refer to review blinding indices and selection metadata, not credentials. Historical logs and manifests retain local paths as byte-for-byte provenance. No model weights, checkpoints, or activation tensors are distributed.
+## Run the three pipelines
 
-## Audit and reproduction
-
-Use Python 3.11 or newer. CPU verification requires only the standard library and does not need model weights:
-
-```sh
-python3 scripts/verify_publication.py
-```
-
-The public verifier checks the publication manifest, released inputs, complete response matrix, review labels, evidence spans, and saved summaries offline. The original archived validator also checks prior heavy source artifacts that are intentionally omitted here; use the public verifier for this publication.
-
-To inspect scores without rerunning inference, verify the archive and plot its saved summary into a new output file:
+From the repository root, Python 3.11+ preparation needs only the standard library:
 
 ```sh
-python3 -m pip install -r requirements-plotting.txt
-python3 experiments/fta_exact_replay_20261012_170305/fta_exact_replay_plot.py \
-  experiments/fta_exact_replay_20261012_170305/summary.json \
-  /tmp/fta-replay-summary.png
+python3 -B -m pipelines.prepare
 ```
 
-The plotting command requires a filename that does not already exist. Archived summarization/finalization scripts use exclusive writes and will not overwrite the published outputs. The labels are saved assisted-review data; they are not regenerated automatically by an inference rerun.
+It checks the seven frozen file hashes, all 100 tasks, three policies, and all 300 messages against the original author formatter. It consumes the supplied inputs rather than rebuilding them. `--fetch-missing` fetches missing upstream files from v0.3.0 and verifies their recorded hashes; `--source-bundle` recovers supplied prebuilt inputs/policies when necessary. Existing altered files are rejected and left untouched.
 
-To stage the unchanged inputs and frozen runner with a fresh manifest on CPU, without weights or generation:
+Use official pinned weights in an external Hugging Face cache and the recorded inference dependencies. Generation requires an allocated GPU node. Check native templates on CPU before generation:
 
 ```sh
-python3 scripts/reproduce_exact.py --output /tmp/fta-prepared --prepare-only
+python3 -B -m pipelines.generate preflight --model ministral3_8b --templates-only
+python3 -B -m pipelines.generate run --model ministral3_8b
 ```
 
-For a new model run, use an allocated NVIDIA V100 GPU and the recorded CUDA 12.4 inference environment, install the inference requirements, and cache the pinned model revisions listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) beforehand. The unchanged loader requires a visible scheduler allocation (Slurm, PBS, or LSF), and rejects identifiable login nodes:
+The same pipeline accepts `llama3_1_8b` and `nemotron3_super120b`. It resumes missing slots and preserves saved reports. Infrastructure errors stop the job and are recorded separately; they do not become fabricated answer rows. Qwen/Gemma generation is disabled in this phase. Weight access and hardware requirements are checked before model loading; blocked models do not receive invented results or zero-error bars.
+
+New settings use greedy decoding, a 2,048-token cap, and one repetition. The old replay used a 160-token cap and two identical repetitions. These are different generation conditions; compare the recorded denominators and settings rather than treating model differences as a controlled token-budget experiment. Nemotron uses its documented native non-thinking option; Ministral uses the official Mistral Common interface and documented BF16 dequantization of official FP8 weights.
+
+Scoring uses one full-response judgment per new answer under the six original rubric labels, plus separately recorded reporting diagnostics. Export packets and save the reviewer judgments outside the active project:
 
 ```sh
-python3 -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-python3 -m pip install -r requirements-inference.txt
-python3 scripts/reproduce_exact.py --output /tmp/fta-new-gpu-run
+python3 -B -m pipelines.report packets --output /external/review/packets.jsonl
+python3 -B -m pipelines.report score --reviews /external/review/reviews.jsonl
+python3 -B -m pipelines.report report
 ```
 
-Each output path must be new or empty. The public wrapper stages the unchanged runner, bundle, and native inputs and writes a fresh manifest; it does not reuse published responses. Inference uses locally cached weights. Exact numerical outputs depend on the recorded hardware and software environment. The original freeze/validation entry points retain preservation checks for the earlier private workspace; the public wrapper handles preparation for this repository.
+The importer requires every label, exact positive evidence spans, confidence, and one review per unscored answer. It rejects repeated reviews and preserves old judgments. Reports exclude technical failures, empty/truncated answers, and confidence-1 labels from the applicable denominators. Labels overlap: one answer may admit failure and also assert an unsupported fact. The figure uses the original rubric; supplementary requested-fact and header diagnostics remain in the JSON summary.
 
-## Contributing and attribution
+## Attribution
 
-Study-specific code and documentation are available under the [MIT License](LICENSE), copyright (c) 2026 Samira Jahangiri. See [CONTRIBUTING.md](CONTRIBUTING.md) for corrections and new experiments, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream attribution and model licensing. Keep frozen artifacts intact; record any extension under a new run and describe its changed scope.
+Study code uses the [MIT License](LICENSE). Original FTA files retain [Junru Zhu's MIT notice](data/FTA_LICENSE). Official model weights, caches, environments, credentials, and old archives are excluded from Git; see [third-party notices](THIRD_PARTY_NOTICES.md).

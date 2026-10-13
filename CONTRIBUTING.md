@@ -2,14 +2,14 @@
 
 Corrections to documentation, reproducibility helpers, or scoring are welcome. For a scoring issue, identify the response or blinded review ID, the disputed label, and the exact response span. Explain how the available tool observation supports or fails to support the claim; preserve uncertainty where the evidence does not resolve it.
 
-Preserve the published replay's frozen inputs, source hashes, raw responses, original ratings, and manifests. Put new results in a new run directory, and label changed prompts, synthetic controls, model revisions, decoding, scoring methods, or task selection explicitly. A modified-input extension should not be described as the exact replay. Do not treat duplicate greedy repetitions as independent samples or describe Codex-assisted labels as human annotations.
+This phase uses only the unchanged FTA v0.3.0 dataset, three policies, and author-formatted messages. Preserve `data/`, the original policies, and `results/preserved_exact/`. Keep model revisions and settings in `config/models.json` and their runtime manifests. Use the three pipelines and at most five modules in `utils/`; avoid task folders, timestamp folders, and duplicate exports. Do not introduce custom tasks, reminders, recovery variants, probes, or activation experiments here.
 
 Run the offline checks after a change:
 
 ```sh
-python3 scripts/verify_publication.py
+python3 -B -m pipelines.prepare
 ```
 
-The public verifier requires Python 3.11+ and the standard library. Changes to frozen material require a separate, clearly identified corrected artifact and provenance; do not silently update the manifest to make an altered archive pass. Test helper changes on fresh temporary outputs. The archived summarization and finalization scripts protect existing files with exclusive writes and depend on omitted original heavy artifacts.
+Preparation requires Python 3.11+ and the standard library. It checks original file hashes and all 300 messages. Do not change a source hash to make altered inputs pass. Generate one report per model/task/policy; resume only missing reports. New responses receive one full-answer rubric review, with exact quotations and uncertainty, through `pipelines/report.py`. Existing Qwen/Gemma labels are reused unchanged. Codex-assisted annotations are not independent human annotation. Preserve identical historical greedy repetitions but do not count both in comparisons.
 
-Keep contributions lightweight: omit model weights, checkpoints, activation tensors, credentials, and large raw CSVs. Preserve the upstream MIT notice for any copied FTA material, as explained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Reports containing `private_*` blinding identifiers may be cited by ID; those filenames describe annotation metadata.
+Keep contributions lightweight: omit model weights, caches, environments, credentials, old archives, and large historical CSVs. Preserve the upstream MIT notice in `data/FTA_LICENSE`. The recoverable archive is outside the active project, as recorded in `config/archive.json`; the previous Git history also remains available.

@@ -1,0 +1,112 @@
+{
+  "schema_version": "fta-official-models-v1",
+  "dataset": "FTA v0.3.0: unchanged 100 tasks, three policies, 300 logical inputs",
+  "new_generation": {
+    "do_sample": false,
+    "num_beams": 1,
+    "max_new_tokens": 2048,
+    "repetition_penalty": 1.0,
+    "length_penalty": 1.0,
+    "use_cache": true,
+    "seed": 20261012,
+    "batch_size": 1,
+    "repetitions": 1,
+    "settings_difference_from_existing": "Existing Qwen/Gemma reports used a 160-token cap and two identical greedy repetitions; preserved results reuse repetition 0. New models receive a 2048-token cap and one greedy report per task/policy. No status prefill or constrained output format is added."
+  },
+  "models": {
+    "qwen3_8b": {
+      "repo_id": "Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "architecture": "Qwen3ForCausalLM",
+      "mode": "reuse_completed",
+      "tokenizer_backend": "auto",
+      "template_kwargs": {
+        "enable_thinking": false
+      },
+      "original_repetitions": 2,
+      "selected_repetition": 0,
+      "original_max_new_tokens": 160,
+      "note": "Reuse saved exact-replay reports and labels; never load or regenerate Qwen in this phase."
+    },
+    "gemma2_9b": {
+      "repo_id": "google/gemma-2-9b-it",
+      "revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+      "architecture": "Gemma2ForCausalLM",
+      "mode": "reuse_completed",
+      "tokenizer_backend": "auto",
+      "template_kwargs": {},
+      "original_repetitions": 2,
+      "selected_repetition": 0,
+      "original_max_new_tokens": 160,
+      "note": "Reuse saved exact-replay reports and labels, preserving the documented native Gemma system-role adapter; never regenerate."
+    },
+    "llama3_1_8b": {
+      "repo_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "architecture": "LlamaForCausalLM",
+      "mode": "generate_new",
+      "tokenizer_backend": "auto",
+      "template_kwargs": {},
+      "resources": {
+        "min_gpus": 1,
+        "min_gpu_memory_gib": 24,
+        "min_compute_capability_major": 8
+      },
+      "official_weight_bytes_gib": 14.96,
+      "official_source": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct",
+      "access_precheck": "2026-10-12: official config download returned HTTP 403 GatedRepoError with the existing authenticated Hugging Face credentials; no approved cached official snapshot was found. No mirror or substitute is used."
+    },
+    "ministral3_8b": {
+      "repo_id": "mistralai/Ministral-3-8B-Instruct-2512",
+      "revision": "5b26027e7b19eeb4b7352e1fed3926375dd2cb4d",
+      "architecture": "Mistral3ForConditionalGeneration",
+      "mode": "generate_new",
+      "tokenizer_backend": "mistral_common",
+      "template_kwargs": {},
+      "dequantize_official_fp8": true,
+      "resources": {
+        "min_gpus": 1,
+        "min_gpu_memory_gib": 32,
+        "min_compute_capability_major": 8
+      },
+      "official_weight_bytes_gib": 9.705,
+      "official_source": "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512",
+      "precision_note": "The official checkpoint stores FP8 weights. Use the authors' documented FineGrainedFP8Config(dequantize=True) loader to run those official weights as BF16; this is explicit runtime dequantization, not a third-party checkpoint.",
+      "native_template_note": "Use official MistralCommonBackend.apply_chat_template(tokenize=True) on the untouched system/user messages. Its rendered text is saved for inspection but is never manually re-encoded. No downloaded SYSTEM_PROMPT.txt replaces the FTA author policy.",
+      "official_indexed_weight_bytes": 10420654824,
+      "official_indexed_weight_shards": 3,
+      "weight_size_note": "Size of the three indexed safetensor shards actually loaded, as recorded in results/runtime_ministral3_8b.json; excludes alternative weight representations in the official repository."
+    },
+    "nemotron3_super120b": {
+      "repo_id": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      "revision": "2dc98e2afe4face0e4ce40972a915c45368bd34a",
+      "architecture": "NemotronHForCausalLM",
+      "mode": "generate_new",
+      "tokenizer_backend": "auto",
+      "template_kwargs": {
+        "enable_thinking": false
+      },
+      "resources": {
+        "min_gpus": 8,
+        "min_gpu_memory_gib": 80,
+        "min_compute_capability_major": 9
+      },
+      "official_weight_bytes_gib": 230.25,
+      "official_source": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      "resource_note": "NVIDIA's BF16 model card specifies eight H100-80GB GPUs as the minimum. Newton has four eight-H100 highgpu nodes; queue availability must be checked. Require the allocation before loading. No smaller model, third-party quantization, or CPU/disk offload substitutes for this checkpoint.",
+      "runtime_correctness_requirement": "Transformers 5.14.1's installed Nemotron Torch fallback retains the incorrect inter-chunk reduction documented in upstream issue 47246. Native mamba-ssm and causal-conv1d fast kernels are required and checked before generation; no fallback output is accepted.",
+      "runtime_correctness_issue": "https://github.com/huggingface/transformers/issues/47246",
+      "native_kernel_versions": {
+        "mamba-ssm": "2.3.1",
+        "causal-conv1d": "1.5.0.post8"
+      },
+      "native_kernel_compatibility": "Newton uses GLIBC 2.28. Official causal-conv1d 1.5.0.post8 CUDA12/Torch2.6/CXX11-ABI-false wheel supports GLIBC 2.14. Mamba 2.3.1 requires an unchanged official source build using GCC 11.2/CUDA 12.4: newer binary wheels require GLIBC 2.32, older 2.2.x imports use removed Transformers aliases, and 2.3.2 imports Mamba3 requiring newer Triton. The selected 2.3.1 keeps Torch2.6/Triton3.2 unchanged. Native GPU guard success is required before generation; checkpoint and native template stay unchanged. The 2.3.1 source build was cancelled before installation because the eight-H100 allocation estimate was days away. This is a future build prerequisite, not a tested runtime; installed 2.3.2.post1 still fails the native GPU guard.",
+      "native_mamba_source_sha256": "4d529477ad94753962216d583fc8f1c127c717b7d7c875d6bbb9376366d0d761",
+      "native_template_note": "NVIDIA documents enable_thinking=False as a native chat-template option. The frozen future-generation protocol uses direct-report mode instead of the checkpoint default reasoning mode; original FTA system/user text stays unchanged. All 300 native inputs were verified, but no Nemotron report was generated.",
+      "native_kernel_status": "unverified_future_build_requirement",
+      "native_kernel_versions_role": "Required for a future run; Mamba 2.3.1 was not built, installed, or GPU-tested in this session.",
+      "installed_mamba_version_at_finalization": "2.3.2.post1",
+      "installed_mamba_native_guard_passed": false
+    }
+  }
+}

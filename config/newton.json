@@ -1,0 +1,40 @@
+{
+  "scheduler": "Slurm (PBS compatibility commands also available)",
+  "account": "amantzaris",
+  "project_root": "/lustre/fs1/home/sa746371/ICPRAM",
+  "python": "/lustre/fs1/home/sa746371/fta_inference_env/bin/python",
+  "environment_scope": "New external venv; saved SAE-1 torch/transformers reused through a .pth path. Existing environment and model caches preserved.",
+  "environment": {
+    "PYTHONNOUSERSITE": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "RAYON_NUM_THREADS": "1",
+    "TOKENIZERS_PARALLELISM": "false",
+    "MALLOC_CONF": "background_thread:false",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "HF_HUB_DISABLE_XET": "1"
+  },
+  "resources": {
+    "ministral3_8b": {
+      "partition": "normal",
+      "nodes": 1,
+      "gpus": 1,
+      "constraint": "h100",
+      "cpus_per_task": 4,
+      "memory": "64G",
+      "walltime": "04:00:00"
+    },
+    "nemotron3_super120b": {
+      "partition": "highgpu",
+      "nodes": 1,
+      "gpus": 8,
+      "constraint": "h100",
+      "cpus_per_task": 16,
+      "memory": "512G",
+      "walltime": "04:00:00"
+    }
+  },
+  "llama3_1_8b": "not submitted: official gated weights unavailable",
+  "propagate_resource_limits": "NONE",
+  "resource_limit_note": "Login-node virtual memory is capped near4GiB; scheduler jobs do not inherit that cap. CPU native-template checks require a compute allocation."
+}

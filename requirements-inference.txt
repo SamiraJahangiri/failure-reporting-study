@@ -1,9 +1,18 @@
-# Versions recorded in the published V100 / CUDA 12.4 environment.
-# Install the CUDA 12.4 torch wheel separately when required by your platform.
+# Install in a separate inference environment; do not modify existing model environments.
+# Runtime package versions and native checkpoint revisions are saved with each model.
 torch==2.6.0
+torchvision==0.21.0
+torchaudio==2.6.0
 transformers==5.14.1
-tokenizers==0.22.2
-numpy==2.4.6
-scikit-learn==1.9.0
 accelerate==1.14.0
-safetensors==0.8.0
+huggingface-hub==1.25.1
+safetensors>=0.5
+mistral-common==1.12.0
+# Nemotron future runtime prerequisite, not a completed/tested installation in this session.
+# The official Mamba 2.3.1 build was cancelled before installation; installed 2.3.2.post1 failed the GPU guard.
+# Nemotron kernels for Newton: Linux x86_64, Python 3.11, CUDA 12 / Torch 2.6.
+# On GLIBC 2.28, build Mamba's official source with MAMBA_FORCE_BUILD=TRUE,
+# --no-deps --no-build-isolation, GCC 11.2, CUDA 12.4, MAX_JOBS=4 in a scheduler allocation.
+# Newer official binary Mamba wheels require GLIBC 2.32; older ones import removed HF aliases.
+causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.5.0.post8/causal_conv1d-1.5.0.post8+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+mamba-ssm @ https://files.pythonhosted.org/packages/34/67/ec89aa703da194a813e35d2ea2de8f74a7ce6991a120a29f3a0c5e30d4b9/mamba_ssm-2.3.1.tar.gz#sha256=4d529477ad94753962216d583fc8f1c127c717b7d7c875d6bbb9376366d0d761

@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-10-13T00:13:32.758628+00:00",
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+  "phase": "official_weight_access",
+  "error_type": "GatedRepoError",
+  "http_status": 403,
+  "reason": "Official pinned config download returned HTTP 403 with the available authenticated Hugging Face credentials; approved cached weights were not found.",
+  "planned_reports": 300,
+  "reports_generated": 0,
+  "checkpoint_substitution": false,
+  "credentials_disclosed": false,
+  "credential_slots_checked": 2,
+  "status": "blocked"
+}

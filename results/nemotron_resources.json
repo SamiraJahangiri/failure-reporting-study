@@ -1,0 +1,72 @@
+{
+  "checked_at": "2026-10-13T00:58:47.130639+00:00",
+  "official_model_card": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+  "official_bf16_minimum": "8 H100-80GB GPUs",
+  "required_allocation": {
+    "partition": "highgpu",
+    "nodes": 1,
+    "gpus": 8,
+    "memory_gib": 512,
+    "cpus": 16,
+    "time": "04:00:00"
+  },
+  "scheduler_check_argv": [
+    "/apps/slurm/current/bin/sbatch",
+    "--test-only",
+    "--account=amantzaris",
+    "--partition=highgpu",
+    "--nodes=1",
+    "--ntasks=1",
+    "--cpus-per-task=16",
+    "--mem=512G",
+    "--gres=gpu:8",
+    "--constraint=h100",
+    "--time=04:00:00",
+    "--propagate=NONE",
+    "--job-name=fta_nemotron_resource_check",
+    "--wrap=/bin/true"
+  ],
+  "scheduler_check_returncode": 0,
+  "scheduler_check_stdout": "",
+  "scheduler_check_stderr": "sbatch: Job 902271 to start at 2026-10-16T11:39:58 a using 16 processors on nodes evc102 in partition highgpu\n",
+  "scheduler_node_query_returncode": 0,
+  "scheduler_local_clock": "2026-10-12 20:58:47 EDT -0400",
+  "nodes": [
+    {
+      "NodeName": "evc101",
+      "State": "MIXED",
+      "Gres": "gpu:nvidia_h100_80gb_hbm3:8(S:0-1)",
+      "CfgTRES": "cpu=128,mem=1030790M,billing=128,gres/gpu=8",
+      "AllocTRES": "cpu=64,mem=464G,gres/gpu=8"
+    },
+    {
+      "NodeName": "evc102",
+      "State": "MIXED+PLANNED",
+      "Gres": "gpu:nvidia_h100_80gb_hbm3:8(S:0-1)",
+      "CfgTRES": "cpu=128,mem=1030790M,billing=128,gres/gpu=8",
+      "AllocTRES": "cpu=48,mem=972G,gres/gpu=8"
+    },
+    {
+      "NodeName": "evc103",
+      "State": "MIXED+PLANNED",
+      "Gres": "gpu:nvidia_h100_80gb_hbm3:8(S:0-1)",
+      "CfgTRES": "cpu=128,mem=1030790M,billing=128,gres/gpu=8",
+      "AllocTRES": "cpu=10,mem=512G,gres/gpu=8"
+    },
+    {
+      "NodeName": "evc104",
+      "State": "MIXED+PLANNED",
+      "Gres": "gpu:nvidia_h100_80gb_hbm3:8(S:0-1)",
+      "CfgTRES": "cpu=128,mem=1030790M,billing=128,gres/gpu=8",
+      "AllocTRES": "cpu=80,mem=784G,gres/gpu=8"
+    }
+  ],
+  "check_submitted_job": false,
+  "queued_generation_job_id": "902069",
+  "model_loaded": false,
+  "model_inference_performed": false,
+  "estimate_limit": "Slurm test-only output estimates an allocation time; it is not a reservation or a guaranteed start time. No currently available node supplies all eight required H100 GPUs.",
+  "generation_job_cancelled_at": "2026-10-13T00:59:12.129536+00:00",
+  "generation_job_final_state": "CANCELLED before allocation/model loading",
+  "generation_job_cancellation_reason": "The eight-H100 scheduler estimate is several days away. Preserve the published scored snapshot without leaving an unattended future generation job."
+}

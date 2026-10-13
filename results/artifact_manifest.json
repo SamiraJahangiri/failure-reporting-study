@@ -1,0 +1,278 @@
+{
+  "created_at": "2026-10-13T01:21:03.194406+00:00",
+  "repository": "https://github.com/SamiraJahangiri/failure-reporting-study",
+  "branch": "main",
+  "previous_public_commit": "fcd35026c4568a37ab67876e9ff59194a65599ae",
+  "scope": "Unchanged FTA v0.3.0; 100 tasks, three original policies, native model templates. No custom tasks or activation experiments.",
+  "logical_inputs": 300,
+  "comparison_answers": 900,
+  "reused_answers": 600,
+  "new_answers_generated_and_scored_once": 300,
+  "historical_reports_preserved": 1200,
+  "new_models_completed": [
+    "mistralai/Ministral-3-8B-Instruct-2512"
+  ],
+  "blocked_models": {
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "checked_at": "2026-10-13T00:13:32.758628+00:00",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "phase": "official_weight_access",
+      "error_type": "GatedRepoError",
+      "http_status": 403,
+      "reason": "Official pinned config download returned HTTP 403 with the available authenticated Hugging Face credentials; approved cached weights were not found.",
+      "planned_reports": 300,
+      "reports_generated": 0,
+      "checkpoint_substitution": false,
+      "credentials_disclosed": false,
+      "credential_slots_checked": 2,
+      "status": "blocked"
+    },
+    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16": {
+      "checked_at": "2026-10-13T01:19:47.837169+00:00",
+      "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      "revision": "2dc98e2afe4face0e4ce40972a915c45368bd34a",
+      "phase": "required_gpu_allocation_and_native_runtime",
+      "error_type": "ResourceUnavailable",
+      "reason": "Official BF16 deployment minimum is eight H100-80GB GPUs. No Newton highgpu node supplies eight free GPUs; Slurm test-only estimated 2026-10-16T11:39:58 EDT, which is not a reservation. The held generation job was cancelled before allocation. Native runtime compatibility is also unverified: installed Mamba 2.3.2.post1 failed the GPU guard, and the required future official Mamba 2.3.1 source build was cancelled before installation. No Nemotron model was loaded or answer generated.",
+      "resource_evidence": "results/nemotron_resources.json",
+      "runtime_setup_evidence": "results/nemotron_runtime_setup.json",
+      "planned_reports": 300,
+      "reports_generated": 0,
+      "checkpoint_substitution": false,
+      "status": "blocked",
+      "primary_blocker": "GPU resources unavailable",
+      "secondary_blocker": "native runtime compatibility unverified",
+      "native_runtime_ready": false
+    }
+  },
+  "scoring": "Existing labels copied unchanged; 300 new answers each receive one Codex-assisted review under the original rubric. Not independent human annotation.",
+  "generation_setting_difference": "Existing Qwen/Gemma reports used a 160-token cap and two identical greedy repetitions; preserved results reuse repetition 0. New models receive a 2048-token cap and one greedy report per task/policy. No status prefill or constrained output format is added.",
+  "helpers": 5,
+  "pipelines": 3,
+  "preservation_hashes_verified": 9,
+  "credential_pattern_scan_passed": true,
+  "excluded_file_types_scan_passed": true,
+  "all_files_below_10MB": true,
+  "included_files_excluding_this_manifest": 54,
+  "included_bytes_excluding_this_manifest": 16385466,
+  "manifest_self_hash_excluded": true,
+  "files": {
+    ".gitattributes": {
+      "bytes": 131,
+      "sha256": "b467e00e03308bb49ce1e3d0f44e259e4e17c6fa79304d134a98e31a88613b10"
+    },
+    ".gitignore": {
+      "bytes": 547,
+      "sha256": "36c1150051bb84712edfee4b47f494878c71dca7a0d06bbd86ebbdbf76e868aa"
+    },
+    "CONTRIBUTING.md": {
+      "bytes": 1818,
+      "sha256": "30f8f77be886113ce3124e8a55f21407c8e983078c117c73587b53a65b54cd6a"
+    },
+    "LICENSE": {
+      "bytes": 1223,
+      "sha256": "1acdcbc5d77f4a064b7c99434dcbe3e2ae2c5fedb28ed3eff99c3aaa9164aa5f"
+    },
+    "README.md": {
+      "bytes": 9501,
+      "sha256": "8865a7f0b35abc12d4973dfa7c85fc71a9e637567055a642737d64964774ebba"
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "bytes": 2528,
+      "sha256": "a166b54d9592ede317fe84ccb13c942346a0e5d3b5c64acf06845dd6628c9a05"
+    },
+    "config/archive.json": {
+      "bytes": 593,
+      "sha256": "2861cc25dbe220aff582bb5ed07d84b386fabc45ab5f6484589226b8cad46614"
+    },
+    "config/models.json": {
+      "bytes": 6912,
+      "sha256": "2b68c13b0d37478b9ac3be1fb062c38c4248f815c7f0a56c662c197097c91148"
+    },
+    "config/newton.json": {
+      "bytes": 1380,
+      "sha256": "ef2edc87e0033d509451c05a17d9ef8d7e03b0cb69b2fb2747ca8c538794b64d"
+    },
+    "config/policies.json": {
+      "bytes": 826,
+      "sha256": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1"
+    },
+    "config/preserved_exact.json": {
+      "bytes": 1512,
+      "sha256": "bc3e6b3d663434440c7633d6efabacfde3e65fcd1de7826d82fa67336aaa9c91"
+    },
+    "config/source.json": {
+      "bytes": 3479,
+      "sha256": "4093751d79268b14a8479d57d8fc99ec20ca1785d3678dc6fb251d9c81d6aa61"
+    },
+    "data/FTA_LICENSE": {
+      "bytes": 1066,
+      "sha256": "bb86fab5273b6e8e01b40b93f79be9085f0001fc1319a8c671f261fd97ca6b56"
+    },
+    "data/annotation_guide.md": {
+      "bytes": 6790,
+      "sha256": "f2658e2759593349075019b0316954ea019a2a2a69c895d22b60a1f96afe2f24"
+    },
+    "data/confirmatory_scenarios.jsonl": {
+      "bytes": 96765,
+      "sha256": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea"
+    },
+    "data/model_inputs.jsonl": {
+      "bytes": 248974,
+      "sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7"
+    },
+    "data/upstream_conditions.py": {
+      "bytes": 1333,
+      "sha256": "0baf43cc5a7afe2b62c68923ff465fe29e9ef9e5937b89508bf7e2969ee37f4f"
+    },
+    "data/upstream_prompting.py": {
+      "bytes": 1081,
+      "sha256": "1150fa52fcb2586024c511af380ed3f72f3aa991a74dc742716d6cfec3ef5c13"
+    },
+    "pipelines/generate.py": {
+      "bytes": 9030,
+      "sha256": "9f94cff85116582ee03536658280e7428115e6acead360fee36a5226ec7c3cd7"
+    },
+    "pipelines/prepare.py": {
+      "bytes": 1240,
+      "sha256": "3c219894356e55f62add5ceae8858744465064632a84feed8ad45640b0d6d986"
+    },
+    "pipelines/report.py": {
+      "bytes": 14712,
+      "sha256": "e8155ba2e55042c9926f283ae910f48076a61fdf5a6b99107a3d97487c615361"
+    },
+    "requirements-inference.txt": {
+      "bytes": 1264,
+      "sha256": "891a92f5ae1a5efc3c1d5a05abf38187f31461961484a49c1b11e60a03ddf858"
+    },
+    "requirements-plotting.txt": {
+      "bytes": 19,
+      "sha256": "5ac19f72885e39e87481de0d3cdb12f0d341e36ea4a218a8d2ac76bcb38f970f"
+    },
+    "results/answers.jsonl": {
+      "bytes": 2627262,
+      "sha256": "83f3be86d71e266e7ee59d00fe448b5fa3142dfac9269f3ee5cb438a7fd5b7eb"
+    },
+    "results/blocker_llama3_1_8b.json": {
+      "bytes": 595,
+      "sha256": "eb7be27730c540b588181d913b2956fa9e6c89d6f51ec7268119729bc59f6833"
+    },
+    "results/blocker_nemotron3_super120b.json": {
+      "bytes": 1154,
+      "sha256": "4d3d3b5b78b2309b660d170b60ec80ae0128802d10994a21a9a8e78790ea04aa"
+    },
+    "results/examples.txt": {
+      "bytes": 17305,
+      "sha256": "de70becea171fd6e35a6a7c3da2bcc5ac449262b01e2295b1e43702e09e4e6ae"
+    },
+    "results/generation_ministral3_8b.json": {
+      "bytes": 951,
+      "sha256": "52f553670ecd03457070dbca54a60e3e3e90563842abc54544736c4905f89603"
+    },
+    "results/labels.jsonl": {
+      "bytes": 2669824,
+      "sha256": "9ffad438aee5534804821fb631f1baf81b5688decb610b45061536aabdc5a8fa"
+    },
+    "results/nemotron_readiness.json": {
+      "bytes": 4497,
+      "sha256": "ea28f3426a6158a38a8ff61bf7b80c2c86018abfa60c6ebf826052c813a7b43d"
+    },
+    "results/nemotron_resources.json": {
+      "bytes": 2671,
+      "sha256": "7d449ddb3fee07024d6a9920922992bd7b533c0f8272347f3fe1ca84a9d686eb"
+    },
+    "results/nemotron_runtime_setup.json": {
+      "bytes": 5875,
+      "sha256": "4a1b06da9ca8da66e0a69dc636fa274e53dcabe17b96facf560f43ba82c42e38"
+    },
+    "results/preflight_ministral3_8b.json": {
+      "bytes": 130126,
+      "sha256": "7fefef44ed9c1e2676ebf907b3fab6aff07cdd14d84d47b2dd6ca4f4d06e0679"
+    },
+    "results/preflight_nemotron3_super120b.json": {
+      "bytes": 129946,
+      "sha256": "2de2c30190dea9dd7ef32c09e1bc0a9c1990e7523085e47119169aff79ea6233"
+    },
+    "results/preserved_exact/final_reviews_canonical.jsonl": {
+      "bytes": 1565796,
+      "sha256": "9741e89d44f4a73a8d5c5a25df7203afbf19e9daaaefec1b8e5d610767973b04"
+    },
+    "results/preserved_exact/findings.txt": {
+      "bytes": 4080,
+      "sha256": "a1f20850dde235427a5ff9e47f7368b296785b8ec5a26e9e28cc032818b8bbf7"
+    },
+    "results/preserved_exact/native_inputs.jsonl": {
+      "bytes": 1717784,
+      "sha256": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f"
+    },
+    "results/preserved_exact/raw_responses.jsonl": {
+      "bytes": 1272472,
+      "sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016"
+    },
+    "results/preserved_exact/run_manifest.json": {
+      "bytes": 15697,
+      "sha256": "c581896b37dbb8fd53569694e7ab87c198ff5c78ae4f27b4f740f2c12bb40353"
+    },
+    "results/preserved_exact/runtime_Qwen3-8B.json": {
+      "bytes": 11807,
+      "sha256": "9d571eb16e901fec779d87bda7a37d40faccd20660337eba1cb8ee8dc19c336b"
+    },
+    "results/preserved_exact/runtime_gemma-2-9b-it.json": {
+      "bytes": 4434,
+      "sha256": "0f076449836b1e6a5d7d6b24c262f746900bbc3735770624bd8bf536d99f42f4"
+    },
+    "results/preserved_exact/scored_reports.jsonl": {
+      "bytes": 4470648,
+      "sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be"
+    },
+    "results/preserved_exact/summary.json": {
+      "bytes": 943318,
+      "sha256": "e8b76e4c82566333d1e14498d35efcebd35bb7df50e2e6680621cc700376caf4"
+    },
+    "results/reuse_manifest.json": {
+      "bytes": 509,
+      "sha256": "e5c7913e5411e618e1290bc7945c7329cf995e89b848c941e68baf53ac73676c"
+    },
+    "results/runtime_ministral3_8b.json": {
+      "bytes": 141268,
+      "sha256": "86b9c15eed5d119d50b25686538dfa4a65c4cb1be4212f7619714a417c9ef9a6"
+    },
+    "results/scheduler_jobs.json": {
+      "bytes": 6561,
+      "sha256": "589acea80179ff84e8ef12f942bb68b14af3990b1e28b66df0ba96c715462048"
+    },
+    "results/summary.json": {
+      "bytes": 33186,
+      "sha256": "0174835329ab688069bdb9f60f770fafc30afb53baea9c0db6462901f9363a01"
+    },
+    "results/summary.png": {
+      "bytes": 151341,
+      "sha256": "3d870703355ed8cdca98e46797dfa6e181601c248b2d562b969b99a229d942ce"
+    },
+    "results/verification.json": {
+      "bytes": 6144,
+      "sha256": "a0fc6ce64df18458ae56899a8f09c8d15911d40a504f063c85e9394418bf9d2f"
+    },
+    "utils/dataset.py": {
+      "bytes": 7025,
+      "sha256": "f9064d37965a2e798da9b9b01a07a1f9122939c5f921b8f0c971be81794a32d0"
+    },
+    "utils/io.py": {
+      "bytes": 2652,
+      "sha256": "fa0ddc9b57eedcf360b710c765c52de3d8b053c1b53c0a8c50bc7192da099cbc"
+    },
+    "utils/models.py": {
+      "bytes": 4926,
+      "sha256": "589b59c6541647c251cda74c6111b923ffa2ac75cac4337f9a43cb25d8e4c375"
+    },
+    "utils/runtime.py": {
+      "bytes": 8701,
+      "sha256": "07626d454b46fcd4e65b15e317850cf30b0abb7e2bc6ecd6c5bd9d3eb9d00e81"
+    },
+    "utils/scoring.py": {
+      "bytes": 14187,
+      "sha256": "a57b4aafbba8878e41757624a4d4425da50368c7bc5eab8106b3b63840430f5e"
+    }
+  }
+}

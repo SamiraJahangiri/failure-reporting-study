@@ -1,0 +1,9 @@
+{
+  "archive_location": "newton:/lustre/fs1/home/sa746371/fta_project_archive",
+  "recovery": "public_repository_before_refactor.tar.gz preserves the prior public HEAD; original_project contains the original Newton files. archive_manifest.json records old paths and hashes.",
+  "public_base_commit": "fcd35026c4568a37ab67876e9ff59194a65599ae",
+  "public_snapshot_sha256": "1a719b00db2c33b9838d4d98c69712018bcb79852dac877d8c24129100b199ef",
+  "weights_and_caches_archived": false,
+  "obsolete_custom_experiments_active": false,
+  "completed_exact_replay_preserved": "results/preserved_exact"
+}

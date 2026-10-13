@@ -1,0 +1,45 @@
+{
+  "source_run": "fta_exact_replay_20261012_170305",
+  "raw_reports": 1200,
+  "canonical_comparison_reports": 600,
+  "files": {
+    "raw_responses.jsonl": {
+      "bytes": 1272472,
+      "sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016"
+    },
+    "scored_reports.jsonl": {
+      "bytes": 4470648,
+      "sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be"
+    },
+    "run_manifest.json": {
+      "bytes": 15697,
+      "sha256": "c581896b37dbb8fd53569694e7ab87c198ff5c78ae4f27b4f740f2c12bb40353"
+    },
+    "runtime_Qwen3-8B.json": {
+      "bytes": 11807,
+      "sha256": "9d571eb16e901fec779d87bda7a37d40faccd20660337eba1cb8ee8dc19c336b"
+    },
+    "runtime_gemma-2-9b-it.json": {
+      "bytes": 4434,
+      "sha256": "0f076449836b1e6a5d7d6b24c262f746900bbc3735770624bd8bf536d99f42f4"
+    },
+    "native_inputs.jsonl": {
+      "bytes": 1717784,
+      "sha256": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f"
+    },
+    "summary.json": {
+      "bytes": 943318,
+      "sha256": "e8b76e4c82566333d1e14498d35efcebd35bb7df50e2e6680621cc700376caf4"
+    },
+    "findings.txt": {
+      "bytes": 4080,
+      "sha256": "a1f20850dde235427a5ff9e47f7368b296785b8ec5a26e9e28cc032818b8bbf7"
+    },
+    "final_reviews_canonical.jsonl": {
+      "bytes": 1565796,
+      "sha256": "9741e89d44f4a73a8d5c5a25df7203afbf19e9daaaefec1b8e5d610767973b04"
+    }
+  },
+  "labels_changed": false,
+  "archive_location": "/lustre/fs1/home/sa746371/fta_project_archive"
+}

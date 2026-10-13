@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-13T01:19:47.837169+00:00",
+  "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+  "revision": "2dc98e2afe4face0e4ce40972a915c45368bd34a",
+  "phase": "required_gpu_allocation_and_native_runtime",
+  "error_type": "ResourceUnavailable",
+  "reason": "Official BF16 deployment minimum is eight H100-80GB GPUs. No Newton highgpu node supplies eight free GPUs; Slurm test-only estimated 2026-10-16T11:39:58 EDT, which is not a reservation. The held generation job was cancelled before allocation. Native runtime compatibility is also unverified: installed Mamba 2.3.2.post1 failed the GPU guard, and the required future official Mamba 2.3.1 source build was cancelled before installation. No Nemotron model was loaded or answer generated.",
+  "resource_evidence": "results/nemotron_resources.json",
+  "runtime_setup_evidence": "results/nemotron_runtime_setup.json",
+  "planned_reports": 300,
+  "reports_generated": 0,
+  "checkpoint_substitution": false,
+  "status": "blocked",
+  "primary_blocker": "GPU resources unavailable",
+  "secondary_blocker": "native runtime compatibility unverified",
+  "native_runtime_ready": false
+}

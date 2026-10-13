@@ -1,0 +1,24 @@
+{
+  "model": "mistralai/Ministral-3-8B-Instruct-2512",
+  "revision": "5b26027e7b19eeb4b7352e1fed3926375dd2cb4d",
+  "generation": {
+    "do_sample": false,
+    "num_beams": 1,
+    "max_new_tokens": 2048,
+    "repetition_penalty": 1.0,
+    "length_penalty": 1.0,
+    "use_cache": true,
+    "seed": 20261012,
+    "batch_size": 1,
+    "repetitions": 1,
+    "settings_difference_from_existing": "Existing Qwen/Gemma reports used a 160-token cap and two identical greedy repetitions; preserved results reuse repetition 0. New models receive a 2048-token cap and one greedy report per task/policy. No status prefill or constrained output format is added."
+  },
+  "template_kwargs": {},
+  "inputs_sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+  "completed_at": "2026-10-13T00:41:52.034821+00:00",
+  "reports": 300,
+  "truncated": 0,
+  "technical_errors": 0,
+  "repetitions": 1,
+  "identical_greedy_repetitions_created": false
+}

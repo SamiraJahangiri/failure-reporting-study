@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "upstream_repository": "https://github.com/junru-zhu/failure-transparent-agents",
+  "upstream_release": "v0.3.0",
+  "upstream_commit": null,
+  "upstream_commit_note": "The saved source manifest pins v0.3.0 and file SHA-256 values; it does not record a commit SHA.",
+  "policy_version": "2026-09-10.v1",
+  "dataset_record_count": 100,
+  "logical_input_count": 300,
+  "policies": [
+    "baseline",
+    "transparency",
+    "evidence_contract"
+  ],
+  "category_counts": {
+    "web_unavailable": 20,
+    "missing_attachment": 20,
+    "execution_failed": 20,
+    "permission_denied": 20,
+    "stale_data": 20
+  },
+  "pressure_counts": {
+    "neutral": 20,
+    "expected_answer": 20,
+    "urgency": 20,
+    "forced_choice": 20,
+    "conceal_failure": 20
+  },
+  "tool_status_counts": {
+    "error": 40,
+    "missing": 20,
+    "denied": 20,
+    "stale": 20
+  },
+  "files": {
+    "data/confirmatory_scenarios.jsonl": {
+      "sha256": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea",
+      "bytes": 96765,
+      "bundled_path": "data/confirmatory_scenarios.jsonl",
+      "url": "https://raw.githubusercontent.com/junru-zhu/failure-transparent-agents/v0.3.0/data/confirmatory_scenarios.jsonl"
+    },
+    "data/model_inputs.jsonl": {
+      "sha256": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+      "bytes": 248974,
+      "bundled_path": "model_inputs.jsonl",
+      "url": null
+    },
+    "data/annotation_guide.md": {
+      "sha256": "f2658e2759593349075019b0316954ea019a2a2a69c895d22b60a1f96afe2f24",
+      "bytes": 6790,
+      "bundled_path": "upstream/docs/annotation_guide.md",
+      "url": "https://raw.githubusercontent.com/junru-zhu/failure-transparent-agents/v0.3.0/docs/annotation_guide.md"
+    },
+    "data/FTA_LICENSE": {
+      "sha256": "bb86fab5273b6e8e01b40b93f79be9085f0001fc1319a8c671f261fd97ca6b56",
+      "bytes": 1066,
+      "bundled_path": "upstream/LICENSE",
+      "url": "https://raw.githubusercontent.com/junru-zhu/failure-transparent-agents/v0.3.0/LICENSE"
+    },
+    "data/upstream_conditions.py": {
+      "sha256": "0baf43cc5a7afe2b62c68923ff465fe29e9ef9e5937b89508bf7e2969ee37f4f",
+      "bytes": 1333,
+      "bundled_path": "upstream/src/failure_transparent_agents/conditions.py",
+      "url": "https://raw.githubusercontent.com/junru-zhu/failure-transparent-agents/v0.3.0/src/failure_transparent_agents/conditions.py"
+    },
+    "data/upstream_prompting.py": {
+      "sha256": "1150fa52fcb2586024c511af380ed3f72f3aa991a74dc742716d6cfec3ef5c13",
+      "bytes": 1081,
+      "bundled_path": "upstream/src/failure_transparent_agents/prompting.py",
+      "url": "https://raw.githubusercontent.com/junru-zhu/failure-transparent-agents/v0.3.0/src/failure_transparent_agents/prompting.py"
+    },
+    "config/policies.json": {
+      "sha256": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1",
+      "bytes": 826,
+      "bundled_path": "conditions.json",
+      "url": null
+    }
+  },
+  "frozen_bundle_manifest_sha256": "bc7474326a7d5cb559972c615c9b4c0bbc03fa1a883dbfa3255314ccd9c62613",
+  "frozen_logical_inputs_note": "Use saved model_inputs.jsonl unchanged; no evaluator hints, reminders, retries, or forced assistant prefixes are model-visible.",
+  "missing_file_policy": "Fetch only missing original upstream files from their pinned v0.3.0 URLs and verify checksums. Frozen prebuilt logical inputs and policies must be recovered from the saved bundle; never regenerate them."
+}

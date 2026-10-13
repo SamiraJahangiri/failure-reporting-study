@@ -1,0 +1,202 @@
+{
+  "verification_scope": "Structural/input/preservation verification only; no semantic rescoring or model execution.",
+  "source_and_formatter": {
+    "upstream_release": "v0.3.0",
+    "tasks": 100,
+    "policies": [
+      "baseline",
+      "transparency",
+      "evidence_contract"
+    ],
+    "logical_inputs": 300,
+    "file_sha256": {
+      "data/confirmatory_scenarios.jsonl": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea",
+      "data/model_inputs.jsonl": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+      "data/annotation_guide.md": "f2658e2759593349075019b0316954ea019a2a2a69c895d22b60a1f96afe2f24",
+      "data/FTA_LICENSE": "bb86fab5273b6e8e01b40b93f79be9085f0001fc1319a8c671f261fd97ca6b56",
+      "data/upstream_conditions.py": "0baf43cc5a7afe2b62c68923ff465fe29e9ef9e5937b89508bf7e2969ee37f4f",
+      "data/upstream_prompting.py": "1150fa52fcb2586024c511af380ed3f72f3aa991a74dc742716d6cfec3ef5c13",
+      "config/policies.json": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1"
+    },
+    "author_messages_verified": true,
+    "inputs_rebuilt": false,
+    "model_execution_performed": false,
+    "scoring_performed": false,
+    "pass": true
+  },
+  "preserved_results": {
+    "count": 9,
+    "files": {
+      "raw_responses.jsonl": {
+        "expected": {
+          "bytes": 1272472,
+          "sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016"
+        },
+        "observed": {
+          "bytes": 1272472,
+          "sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016"
+        },
+        "pass": true
+      },
+      "scored_reports.jsonl": {
+        "expected": {
+          "bytes": 4470648,
+          "sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be"
+        },
+        "observed": {
+          "bytes": 4470648,
+          "sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be"
+        },
+        "pass": true
+      },
+      "run_manifest.json": {
+        "expected": {
+          "bytes": 15697,
+          "sha256": "c581896b37dbb8fd53569694e7ab87c198ff5c78ae4f27b4f740f2c12bb40353"
+        },
+        "observed": {
+          "bytes": 15697,
+          "sha256": "c581896b37dbb8fd53569694e7ab87c198ff5c78ae4f27b4f740f2c12bb40353"
+        },
+        "pass": true
+      },
+      "runtime_Qwen3-8B.json": {
+        "expected": {
+          "bytes": 11807,
+          "sha256": "9d571eb16e901fec779d87bda7a37d40faccd20660337eba1cb8ee8dc19c336b"
+        },
+        "observed": {
+          "bytes": 11807,
+          "sha256": "9d571eb16e901fec779d87bda7a37d40faccd20660337eba1cb8ee8dc19c336b"
+        },
+        "pass": true
+      },
+      "runtime_gemma-2-9b-it.json": {
+        "expected": {
+          "bytes": 4434,
+          "sha256": "0f076449836b1e6a5d7d6b24c262f746900bbc3735770624bd8bf536d99f42f4"
+        },
+        "observed": {
+          "bytes": 4434,
+          "sha256": "0f076449836b1e6a5d7d6b24c262f746900bbc3735770624bd8bf536d99f42f4"
+        },
+        "pass": true
+      },
+      "native_inputs.jsonl": {
+        "expected": {
+          "bytes": 1717784,
+          "sha256": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f"
+        },
+        "observed": {
+          "bytes": 1717784,
+          "sha256": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f"
+        },
+        "pass": true
+      },
+      "summary.json": {
+        "expected": {
+          "bytes": 943318,
+          "sha256": "e8b76e4c82566333d1e14498d35efcebd35bb7df50e2e6680621cc700376caf4"
+        },
+        "observed": {
+          "bytes": 943318,
+          "sha256": "e8b76e4c82566333d1e14498d35efcebd35bb7df50e2e6680621cc700376caf4"
+        },
+        "pass": true
+      },
+      "findings.txt": {
+        "expected": {
+          "bytes": 4080,
+          "sha256": "a1f20850dde235427a5ff9e47f7368b296785b8ec5a26e9e28cc032818b8bbf7"
+        },
+        "observed": {
+          "bytes": 4080,
+          "sha256": "a1f20850dde235427a5ff9e47f7368b296785b8ec5a26e9e28cc032818b8bbf7"
+        },
+        "pass": true
+      },
+      "final_reviews_canonical.jsonl": {
+        "expected": {
+          "bytes": 1565796,
+          "sha256": "9741e89d44f4a73a8d5c5a25df7203afbf19e9daaaefec1b8e5d610767973b04"
+        },
+        "observed": {
+          "bytes": 1565796,
+          "sha256": "9741e89d44f4a73a8d5c5a25df7203afbf19e9daaaefec1b8e5d610767973b04"
+        },
+        "pass": true
+      }
+    },
+    "pass": true
+  },
+  "consolidated_records": {
+    "answers": 900,
+    "labels": 900,
+    "unique_answer_ids": 900,
+    "unique_label_ids": 900,
+    "id_sets_match": true,
+    "unique_model_task_policy": 900,
+    "all_repeat_zero": true,
+    "answer_model_counts": {
+      "Qwen/Qwen3-8B": 300,
+      "google/gemma-2-9b-it": 300,
+      "mistralai/Ministral-3-8B-Instruct-2512": 300
+    },
+    "label_model_counts": {
+      "Qwen/Qwen3-8B": 300,
+      "google/gemma-2-9b-it": 300,
+      "mistralai/Ministral-3-8B-Instruct-2512": 300
+    },
+    "reused_answers": 600,
+    "reused_labels": 600,
+    "new_answers": 300,
+    "new_labels": 300,
+    "new_model_names": [
+      "mistralai/Ministral-3-8B-Instruct-2512"
+    ],
+    "reused_answer_field_mismatches": [],
+    "reused_label_fields": [
+      "response_id",
+      "scenario_id",
+      "model",
+      "condition",
+      "repeat",
+      "rubric_labels",
+      "diagnostics",
+      "wrong_completion_header",
+      "evidence_spans",
+      "confidence",
+      "uncertainty",
+      "notes",
+      "unresolved_labels",
+      "primary_reviewer",
+      "secondary_reviewer",
+      "adjudicated",
+      "scoring_provenance",
+      "blind_id",
+      "reviewed_equivalent_blind_id",
+      "equivalent_review_rule"
+    ],
+    "reused_label_field_mismatches": [],
+    "new_scoring_passes": {
+      "1": 300
+    },
+    "pass": true
+  },
+  "layout": {
+    "utils": [
+      "dataset.py",
+      "io.py",
+      "models.py",
+      "runtime.py",
+      "scoring.py"
+    ],
+    "pipelines": [
+      "generate.py",
+      "prepare.py",
+      "report.py"
+    ],
+    "pass": true
+  },
+  "saved_records_modified_by_verification": false
+}

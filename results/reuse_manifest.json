@@ -1,0 +1,11 @@
+{
+  "preserved_raw_sha256": "ded9167c5ef903fcaabcaceb9d7aebf2a8bda0ca6931296b54fb700b429f9016",
+  "preserved_scored_sha256": "3f0ed6f7fa2e22f2f3c5bc7895fa176c68a435dfc247553685b81506228de7be",
+  "historical_reports_preserved": 1200,
+  "comparison_reports_selected": 600,
+  "selection": "repeat 0, 100 unchanged tasks × 3 original policies per model",
+  "identical_greedy_pairs_verified": 600,
+  "new_scoring_of_old_answers": false,
+  "old_max_new_tokens": 160,
+  "new_repetitions_per_model_task_policy": 1
+}

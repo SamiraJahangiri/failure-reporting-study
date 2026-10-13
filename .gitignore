@@ -2,7 +2,13 @@
 checkpoints/
 models/
 activations/
-.cache/
+**/.cache/
+model_cache/
+archives/
+archive/
+*.tar
+*.tar.gz
+*.zip
 work/
 outputs/
 *.safetensors
@@ -21,11 +27,18 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+env/
+envs/
+.conda/
+.ssh/
 .env
 .env.*
 *.pem
 *.key
+*.whl
 .DS_Store
+results/.*.lock
+results/*.log
 # These bulky historical CSVs are replaced by documented compact exports.
 fta_results.csv
 fta_diagnostic_results.csv
