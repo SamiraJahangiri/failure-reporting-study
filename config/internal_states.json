@@ -1,0 +1,75 @@
+{
+  "phase": "exploratory_prompt_only_internal_state_comparison",
+  "frozen_before_activation_analysis_at": "2026-10-13T04:54:51.235873+00:00",
+  "models": [
+    "qwen3_8b",
+    "gemma2_9b",
+    "ministral3_8b"
+  ],
+  "checkpoint_and_template_rule": "Use original pinned checkpoints/native templates and saved precision; verify original exact logical messages, native rendering and token counts/IDs. No saved answer enters model input.",
+  "policy_pairs": [
+    {
+      "source": "baseline",
+      "target": "evidence_contract",
+      "priority": "main"
+    },
+    {
+      "source": "baseline",
+      "target": "transparency",
+      "priority": "secondary"
+    },
+    {
+      "source": "transparency",
+      "target": "evidence_contract",
+      "priority": "secondary"
+    }
+  ],
+  "extraction": "Forward-only, eval/inference_mode, batch1 without padding, use_cache=False; hook every decoder block output at the final full native input token, before final normalization and before any answer token. No generation, scoring, or interventions.",
+  "precision": {
+    "qwen3_8b": "float16/eager on V100-32GB",
+    "gemma2_9b": "float16/eager on V100-32GB",
+    "ministral3_8b": "official FP8 checkpoint dequantized to bfloat16/eager on H100"
+  },
+  "historical_batch_difference": "Qwen/Gemma original generation batch4 with left padding; reconstructed prompt-only batch1, same real input tokens. These are fresh prompt-state reconstructions, not saved historical activations.",
+  "labels": [
+    "false_success",
+    "fabricated_details"
+  ],
+  "eligibility": "Repeat0 saved full nonempty EOS responses, no technical error/truncation; confidence1 or relevant unresolved labels excluded independently for each metric. Combined/either and strict controls require both flags resolved at both policies. Failure disclosure does not establish accuracy.",
+  "groups": {
+    "label_disappeared": "metric true -> false; report whether another unsupported flag persists or is unresolved",
+    "label_free": "metric false -> false; do not equate this alone with overall accuracy",
+    "persistent": "metric true -> true",
+    "new": "metric false -> true",
+    "joint_clean_control": "both false_success and fabricated_details resolved false in both answers",
+    "joint_reporting_disappeared": "either unsupported flag true -> both flags resolved false"
+  },
+  "matching": "Within model/policy pair, exact category \u00d7 pressure_type strata; corrected-case-weighted clean-control means. Unmatched cases explicitly excluded from matched effects and counted. Controls are different tasks in the same cell, not identical task content.",
+  "cosine_distance": "1 - dot(h_source,h_target)/(norm(h_source)*norm(h_target))",
+  "normalized_difference": "v=(h_target-h_source)/norm(h_source); center against same-cell strict-clean control mean v, then normalize residual directions if nonzero. Endpoint unit-vector differences are angular descriptions with magnitude sqrt(2*cosine distance), not independent magnitude evidence.",
+  "directional_statistics": "Mean pairwise cosine for groups with at least two residual directions; clean-control residuals exclude the control itself. Directional centroids/alignment stay within each model.",
+  "length_controls": "Report source/target token lengths and matched case/control length contrasts; all policy-boundary/position/instruction-format confounds remain possible.",
+  "uncertainty": "2000 deterministic within-cell resamples of case and control task indices jointly across layers for scalar contrasts. Descriptive only: sparse/singleton cells and peak selection preclude significance/precision claims.",
+  "seed": 20261013,
+  "candidate_rule": "Rank main-pair layers by absolute matched cosine-distance contrast, separately for each model/flag; show full trajectories, effect signs and matching sizes. Candidate ranks are exploratory associations, not causal mechanism evidence.",
+  "cache_root_newton": "/lustre/fs1/home/sa746371/fta_internal_state_cache",
+  "publication_outputs": [
+    "results/internal_states.png",
+    "results/internal_states.csv",
+    "results/internal_states.txt",
+    "results/internal_states.json"
+  ],
+  "preserved_source_snapshot_sha256": {
+    "data/model_inputs.jsonl": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7",
+    "data/confirmatory_scenarios.jsonl": "4bb2f63bc0bf03570021246943d4c1d871d0fe29e78edcdcfe740c0f3ee716ea",
+    "config/policies.json": "814a8d1bb288c32f591b7033049ac5346c8fa4d221d28a4e7fe6c5ae22a105e1",
+    "results/answers.jsonl": "83f3be86d71e266e7ee59d00fe448b5fa3142dfac9269f3ee5cb438a7fd5b7eb",
+    "results/labels.jsonl": "9ffad438aee5534804821fb631f1baf81b5688decb610b45061536aabdc5a8fa",
+    "results/preserved_exact/native_inputs.jsonl": "0345cf0d4346d76d7ffac8e63a2599d62a0b0e48eec31e048564a0db441ba21f",
+    "results/runtime_ministral3_8b.json": "86b9c15eed5d119d50b25686538dfa4a65c4cb1be4212f7619714a417c9ef9a6",
+    "results/preserved_exact/runtime_Qwen3-8B.json": "9d571eb16e901fec779d87bda7a37d40faccd20660337eba1cb8ee8dc19c336b",
+    "results/preserved_exact/runtime_gemma-2-9b-it.json": "0f076449836b1e6a5d7d6b24c262f746900bbc3735770624bd8bf536d99f42f4"
+  },
+  "source_snapshot_note": "Consolidated-source hashes describe the currently saved three-model snapshot; selected model/response IDs are used if Nemotron later appends records. Never overwrite answers/labels or frozen Nemotron files.",
+  "nemotron_job_rule": "Leave job902985, its prerequisites, submission, frozen18files, environment and queue untouched. New isolated module avoids modifying its hashed dependencies."
+}

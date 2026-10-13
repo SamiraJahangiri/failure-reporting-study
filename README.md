@@ -4,9 +4,9 @@ A compact replay of the unchanged **Failure-Transparent Agents v0.3.0** dataset:
 
 The completed Qwen3-8B and Gemma-2-9b-it replay is preserved. Its two greedy repetitions were identical, so comparisons select repetition 0: 300 answers per model. Their existing labels are reused without scoring them again. New official models generate one report per task/policy. New answers receive one Codex-assisted full-answer rubric review; this is not independent human annotation or reproduction of the authors' published human scores.
 
-## Current scope
+## Original replay scope
 
-Only the original tasks, failed-tool observations, policies, and message formatting are used. No rewritten questions, added reminders, synthetic success/recovery histories, probes, or activation interventions are part of this phase. Model-native chat templates encode the frozen system/user strings. Only the original evidence-contract instruction requests structured reporting; ordinary answers are not forced to use status labels.
+Only the original tasks, failed-tool observations, policies, and message formatting are used. No rewritten questions, added reminders, synthetic success/recovery histories, probes, or activation interventions are part of the replay phase. Model-native chat templates encode the frozen system/user strings. Only the original evidence-contract instruction requests structured reporting; ordinary answers are not forced to use status labels.
 
 [Model pins and decoding settings](config/models.json), [source hashes](config/source.json), [saved answers](results/answers.jsonl), and [saved labels](results/labels.jsonl) are the primary records. [The summary](results/summary.json) records denominators and uncertainty. [Exact examples](results/examples.txt) contain full copied instructions, requests, tool observations, and evaluated answers.
 
@@ -42,12 +42,35 @@ The completed 900-answer comparison and [its artifact manifest](https://github.c
 
 The intended expansion was 900 new answers across three models. **300 new answers actually ran**; the two blocked models have no error-rate estimates and no bars in the figure. Their pinned settings and the generation pipeline remain available for a later run when access and resources permit.
 
+## Exploratory prompt-state comparison
+
+A separate [prompt-state pipeline](pipelines/internal_states.py) compares Qwen3-8B, Gemma-2-9b-it, and Ministral 3 8B using the same 300 frozen FTA inputs per model. [The analysis plan](config/internal_states.json) was fixed before inspecting the state vectors. It adds no generations, new scoring, or activation interventions. Saved answers and labels determine the comparison groups; answer text never enters the model input.
+
+Extraction records every decoder block's output at the **last token of the complete native input**, before final normalization and before any answer token. Native rendering, pinned tokenizers/checkpoints, token counts, and original precision are checked against the saved replay. Qwen/Gemma historical token-ID arrays were not saved; their original encoder is independently checked against direct native tokenization. Ministral also matches the saved token-ID hashes. Qwen/Gemma use FP16 with eager attention on V100-32GB GPUs; Ministral uses the official FP8 checkpoint dequantized to BF16 with eager attention on an H100. Qwen/Gemma's original generation used batches of four with left padding; these prompt-only reconstructions use one unpadded input at a time. They are newly reconstructed prompt states, not historical activations saved during generation.
+
+The main comparison is baseline → evidence contract; baseline → transparency and transparency → evidence contract are secondary. Cases where a saved unsupported-success or invented-detail label disappears are compared with different tasks free of **both** saved flags under both policies, matched within the same failure category and pressure type. Missing controls and unresolved labels remain visible. The report separates angular movement, relative L2 movement, direction coherence, and input-length differences. Small matched groups, different task content, policy wording, and position changes prevent causal or mechanism claims; layer rankings and bootstrap intervals are descriptive.
+
+The largest main-pair contrasts occur at Qwen block 36 for unsupported success and block 24 for invented details, Gemma block 38 for both, and Ministral block 34 for both. Qwen has only two matched success cases. Gemma and Ministral show less movement than their controls at these peaks; movement directions remain strongly aligned with controls. These candidates do not isolate a false-reporting mechanism.
+
+[Figure](results/internal_states.png) · [Layer table](results/internal_states.csv) · [Report with complete saved input/output examples](results/internal_states.txt) · [Analysis manifest](results/internal_states.json)
+
+Keep vectors and extraction provenance in an external cache. On allocated GPU nodes with each model's recorded environment, run extraction separately:
+
+```sh
+python3 -B -m pipelines.internal_states extract --model qwen3_8b --cache-dir /external/fta_internal_state_cache
+python3 -B -m pipelines.internal_states extract --model gemma2_9b --cache-dir /external/fta_internal_state_cache
+python3 -B -m pipelines.internal_states extract --model ministral3_8b --cache-dir /external/fta_internal_state_cache
+python3 -B -m pipelines.internal_states analyze --cache-dir /external/fta_internal_state_cache
+```
+
+Complete, verified caches are reused. Publish the four compact report artifacts with the code; keep vectors outside Git. This isolated entry point leaves the existing replay pipelines, saved inputs/answers/labels, and Nemotron's 18 frozen submission files, environment, and queued job unchanged.
+
 ## Layout
 
 - `data/`: unchanged original dataset, supplied logical inputs, annotation guide, and original formatter/policy source for verification.
 - `config/`: unchanged policy strings, pinned source/model metadata, archive and preservation records, scheduler settings.
 - `utils/`: five helper modules for IO, input verification, native models, inference runtime, and scoring/report aggregation.
-- `pipelines/`: three entry points for preparation, generation, and scoring/reporting.
+- `pipelines/`: three replay entry points for preparation, generation, and scoring/reporting, plus one isolated exploratory prompt-state entry point. The isolation preserves the dependencies frozen for the submitted Nemotron job.
 - `results/`: consolidated comparison answers/labels, model manifests, summary, figure, exact examples, and immutable completed replay in `preserved_exact/`.
 
 Obsolete custom pilots, diagnostics, intervention code, historical review campaigns, and duplicate exports are recoverable outside the active project at `newton:/lustre/fs1/home/sa746371/fta_project_archive`. [Archive metadata](config/archive.json) describes recovery. The previous public Git history is retained; this refactor uses a normal commit, not a history rewrite. Model caches and the original inference environment are preserved outside the repository.

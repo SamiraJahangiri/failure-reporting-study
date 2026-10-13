@@ -1,2 +1,3 @@
 # Exact copied model answers may include trailing spaces; preserve those quotations.
 results/examples.txt whitespace=-blank-at-eol
+results/internal_states.txt whitespace=-blank-at-eol
