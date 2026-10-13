@@ -30,6 +30,10 @@ The figure excludes six truncated historical answers and excludes unresolved jud
 
 ## Blocked models
 
+**Queued Nemotron replay:** job **902985** now waits for official kernel build **902919**, CUDA/native-input guard **902951**, and an eight-H100 allocation. [The submission record](results/nemotron_submission.json) freezes the inputs, code, checkpoint, and 300-report plan; [the batch script](config/nemotron.sbatch) allows 48 hours, checks complete checkpoint loading, saves progress, and resumes missing reports. Failed prerequisites cancel the dependent job. It has generated no reports at submission time, and full model loading/generation cannot be guaranteed before allocation. The user will monitor it. The batch job generates answers; rubric scoring is performed separately once answers exist.
+
+The completed 900-answer comparison and [its artifact manifest](https://github.com/SamiraJahangiri/failure-reporting-study/blob/4f1586ba587b45788124780d65fdb74fe4eafc52/results/artifact_manifest.json) describe the preceding published snapshot. New submission metadata does not change its saved answers, labels, or figure.
+
 **Llama 3.1 8B Instruct: 0/300 answers.** The official pinned repository returned HTTP 403 with both available Hugging Face credential slots, and approved cached weights were not found. [The access record](results/blocker_llama3_1_8b.json) contains the failure without credentials.
 
 **Nemotron 3 Super 120B BF16: 0/300 answers.** Its official weights are cached and all 300 native inputs were checked. [NVIDIA specifies eight H100-80GB GPUs](https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16); Newton's eligible nodes were occupied. The [Slurm resource check](results/nemotron_resources.json) estimated October 16, 2026 at 11:39:58 EDT, several days after this run. This is an estimate, not a reservation. The held generation job was cancelled before allocation or model loading. Native-kernel setup and its compatibility checks are recorded separately; no smaller or quantized checkpoint was substituted.

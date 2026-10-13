@@ -31,7 +31,13 @@
       "constraint": "h100",
       "cpus_per_task": 16,
       "memory": "512G",
-      "walltime": "04:00:00"
+      "walltime": "2-00:00:00",
+      "python": "/lustre/fs1/home/sa746371/fta_nemotron_env/bin/python",
+      "compiler_modules": [
+        "gcc/gcc-11.2.0",
+        "cuda/cuda-12.4.0"
+      ],
+      "module_bootstrap": "/etc/profile.d/lmod.sh"
     }
   },
   "llama3_1_8b": "not submitted: official gated weights unavailable",

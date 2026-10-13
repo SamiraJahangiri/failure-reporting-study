@@ -79,7 +79,23 @@ class ReportGenerator:
             model_class = Mistral3ForConditionalGeneration
         else:
             model_class = AutoModelForCausalLM
-        self.model = model_class.from_pretrained(str(cached_snapshot(spec)), **kwargs)
+        self.loading_info = None
+        if spec["key"] == "nemotron3_super120b":
+            self.model, information = model_class.from_pretrained(
+                str(cached_snapshot(spec)), output_loading_info=True, **kwargs)
+            self.loading_info = {name: sorted(value) if isinstance(value, (set, list)) else value
+                                 for name, value in information.items()}
+            failures = {name: self.loading_info.get(name, []) for name in
+                        ("missing_keys", "mismatched_keys", "error_msgs")}
+            failures["unexpected_keys"] = [name for name in self.loading_info.get("unexpected_keys", [])
+                                           if not name.startswith("mtp.")]
+            if any(failures.values()):
+                counts = {name: len(value) for name, value in failures.items() if value}
+                examples = {name: value[:10] for name, value in failures.items() if value}
+                raise RuntimeError("Official Nemotron weights did not load completely: " +
+                                   str(counts) + "; examples: " + str(examples))
+        else:
+            self.model = model_class.from_pretrained(str(cached_snapshot(spec)), **kwargs)
         if self.kernel_info:
             from transformers.models.nemotron_h import modeling_nemotron_h
             if not modeling_nemotron_h.is_fast_path_available:
@@ -112,6 +128,8 @@ class ReportGenerator:
                 "assistant_prefill": "", "generation": self.spec["generation"],
                 "effective_generation_config": self.generation_config.to_dict(),
                 "native_kernel_preflight": self.kernel_info,
+                "checkpoint_loading_info": self.loading_info,
+                "hf_device_map": getattr(self.model, "hf_device_map", {}),
                 "weights_precision": "bfloat16", "official_fp8_dequantized": self.spec.get("dequantize_official_fp8", False),
                 "inference_mode": True, "native_input_encoding": "apply_chat_template(tokenize=True); no prompt re-encoding"}
 
