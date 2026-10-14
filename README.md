@@ -65,6 +65,38 @@ python3 -B -m pipelines.internal_states analyze --cache-dir /external/fta_intern
 
 Complete, verified caches are reused. Publish the four compact report artifacts with the code; keep vectors outside Git. This isolated entry point leaves the existing replay pipelines, saved inputs/answers/labels, and Nemotron's 18 frozen submission files, environment, and queued job unchanged.
 
+## Small during-answer study
+
+The follow-up uses a fixed exploratory subset selected from the existing labels before any new activations: five Qwen, six Gemma and ten Ministral error-disappeared tasks, plus ten matched clean controls per model. Unsupported-success and invented-detail memberships stay separate. All three original policies are included. [The frozen plan](config/during_answer.json) records the selected IDs, copied annotation spans, actual supported baseline prefixes, missing controls and exclusions.
+
+Causal teacher forcing reconstructs each saved answer. Answer token `j` is predicted from block output at `P + j - 1`, so the first token uses the final input position. Ministral reuses saved output IDs; Qwen/Gemma retokenize saved visible text because historical output IDs were not saved. Token offsets and next-token probabilities describe supplied words, not factual truth. Natural comparisons align annotated claims/admissions and remain descriptive because preceding words differ.
+
+A separate test appends each eligible task's own supported baseline beginning, using identical prefix IDs under the three policies and leaving the assistant turn unfinished. It generates one greedy continuation per policy, with each model's original tail-token limit. These new tails receive one contextual Codex-assisted review; original labels are not transferred. Supplied failure admissions are part of the input, so they cannot establish newly generated honesty. Prefilling baseline prose can also conflict with the contract's requested reporting format.
+
+Completed: **153 saved-answer reconstructions and 132 new supplied-prefix continuations**, all ending with EOS. Original FTA answers and labels were preserved. The table counts invented-detail judgments among selected case tasks with usable prefixes; denominators exclude unresolved judgments separately for each policy. All control results and unsupported-success counts are in the linked report/table.
+
+| Model | Baseline | Transparency | Evidence contract |
+| --- | --- | --- | --- |
+| Qwen3-8B | 3/3 | 0/4 | 0/4 |
+| Gemma-2-9b-it | 1/1 | 0/1 | 0/1 |
+| Ministral 3 8B | 7/8 | 3/9 | 2/8 |
+
+Gemma has only one prefix-eligible case. Ministral still invented auxiliary tool-capability details under the contract. Main-pair invented-detail state movement was smaller than matched controls at the largest contrasts: Qwen block 36, Gemma 38 and Ministral 25. Qwen's unsupported-success contrast has one case; Gemma has none. These associations leave instruction, position and format effects unresolved. Natural plots align actual annotated spans, with onset set to zero by definition, and retain different preceding words.
+
+**46** combined outputs exactly reproduced saved same-policy answers. **Two** old/new AI label decisions disagree despite identical text and remain marked needs review, without changing either label. Raw new-review counts therefore cannot be treated as changed behavior for those records. Reviews were unblinded Codex-assisted AI judgments, not independent human annotation.
+
+[During-answer figure](results/during_answer.png) · [Results table](results/during_answer.csv) · [Plain-language report and exact prefixes/continuations](results/during_answer.txt) · [Exact token records and new judgments](results/during_answer.json)
+
+The existing internal-state pipeline adds three commands without changing replay helpers or Nemotron's frozen dependencies:
+
+```sh
+python3 -B -m pipelines.internal_states during-replay --model qwen3_8b --cache-dir /external/fta_during_answer_cache
+python3 -B -m pipelines.internal_states during-packets --model qwen3_8b --cache-dir /external/fta_during_answer_cache --output /external/qwen_review_packets.jsonl
+python3 -B -m pipelines.internal_states during-report --cache-dir /external/fta_during_answer_cache --reviews /external/new_reviews.jsonl
+```
+
+Run `during-replay` separately for Qwen, Gemma and Ministral on allocated GPUs. Compressed block vectors stay in three external SQLite caches. Completed records are immutable; a durable pending-generation marker prevents silently repeating a continuation after a crash. All previous FTA and prompt-only results remain intact. The prompt-only report's original source fingerprint refers to [its published commit](https://github.com/SamiraJahangiri/failure-reporting-study/commit/46c73b3c1b24bd8803b423446e807e0dbc39c6c5).
+
 ## Layout
 
 - `data/`: unchanged original dataset, supplied logical inputs, annotation guide, and original formatter/policy source for verification.

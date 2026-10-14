@@ -43,3 +43,7 @@ results/*.log
 fta_results.csv
 fta_diagnostic_results.csv
 fta_diagnostic_pilot_scores.csv
+
+# During-answer vector caches remain external.
+*.sqlite
+*.sqlite3
