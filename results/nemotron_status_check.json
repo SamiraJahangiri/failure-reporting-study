@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-10-20T20:32:59.630330+00:00",
+  "source": "Read-only Slurm sacct/squeue and recorded prerequisite build log on Newton",
+  "main_job": {
+    "job_id": "902985",
+    "state": "CANCELLED",
+    "elapsed": "00:00:00",
+    "started": false,
+    "node_assigned": false,
+    "ended_newton_local": "2026-10-12T23:03:40"
+  },
+  "guard_job": {
+    "job_id": "902951",
+    "state": "CANCELLED",
+    "elapsed": "00:00:00",
+    "started": false
+  },
+  "build_job": {
+    "job_id": "902919",
+    "state": "FAILED",
+    "elapsed": "00:16:16",
+    "exit_code": "1:0",
+    "node": "evc1",
+    "started_newton_local": "2026-10-12T22:47:24",
+    "ended_newton_local": "2026-10-12T23:03:40",
+    "log_tail_error": "AssertionError: mamba_ssm/__init__.py",
+    "log_observation": "Wheel compilation and installation reported success; a subsequent source-file verification assertion failed."
+  },
+  "dependency_behavior": "Failed build cancelled afterok-dependent guard and full job before allocation.",
+  "main_model_reports": 0,
+  "saved_pending_status_is_stale": true,
+  "original_status_file_preserved": "results/nemotron_job_status.json",
+  "original_submission_preserved": "results/nemotron_submission.json",
+  "jobs_restarted_or_modified": false,
+  "environment_or_weights_modified": false
+}

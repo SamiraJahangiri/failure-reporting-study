@@ -30,7 +30,7 @@ The figure excludes six truncated historical answers and excludes unresolved jud
 
 ## Blocked models
 
-**Queued Nemotron replay:** job **902985** now waits for official kernel build **902919**, CUDA/native-input guard **902951**, and an eight-H100 allocation. [The submission record](results/nemotron_submission.json) freezes the inputs, code, checkpoint, and 300-report plan; [the batch script](config/nemotron.sbatch) allows 48 hours, checks complete checkpoint loading, saves progress, and resumes missing reports. Failed prerequisites cancel the dependent job. It has generated no reports at submission time, and full model loading/generation cannot be guaranteed before allocation. The user will monitor it. The batch job generates answers; rubric scoring is performed separately once answers exist.
+**Nemotron status checked October 20, 2026:** Slurm reports main job **902985 cancelled before allocation**. Build prerequisite **902919** failed after 16 minutes: compilation/installation finished, then a post-install source-file verification raised `AssertionError: mamba_ssm/__init__.py`. The dependent guard **902951** and main job were automatically cancelled. Nemotron produced **zero reports**. [The read-only status check](results/nemotron_status_check.json) records the scheduler evidence; the original [submission](results/nemotron_submission.json), stale pending-status file, scripts, environment and weights remain preserved. No job was restarted or changed.
 
 The completed 900-answer comparison and [its artifact manifest](https://github.com/SamiraJahangiri/failure-reporting-study/blob/4f1586ba587b45788124780d65fdb74fe4eafc52/results/artifact_manifest.json) describe the preceding published snapshot. New submission metadata does not change its saved answers, labels, or figure.
 
@@ -97,12 +97,37 @@ python3 -B -m pipelines.internal_states during-report --cache-dir /external/fta_
 
 Run `during-replay` separately for Qwen, Gemma and Ministral on allocated GPUs. Compressed block vectors stay in three external SQLite caches. Completed records are immutable; a durable pending-generation marker prevents silently repeating a continuation after a crash. All previous FTA and prompt-only results remain intact. The prompt-only report's original source fingerprint refers to [its published commit](https://github.com/SamiraJahangiri/failure-reporting-study/commit/46c73b3c1b24bd8803b423446e807e0dbc39c6c5).
 
+
+## Frozen evidence-rule × reporting-structure experiment
+
+A separate prompting-only factorial experiment uses all 100 original FTA questions and failed-tool observations. [The frozen plan](config/factorial.json) and [400 exact logical inputs](data/factorial_inputs.jsonl) were saved before new generation. This is a new ablation, not the authors' original evidence contract.
+
+The four systems are `00=B`, `10=B+R`, `01=B+S` and `11=B+R+S`, joined with exactly two newlines, in B/R/S order. B is the original FTA baseline verbatim. R is the supplied evidence rule; S requests STATUS, EVIDENCE, LIMITATION and NEXT_ACTION headings. S carries meaningful evidence-related content, so its effect is not purely cosmetic. Questions, tool observations and native role adapters are unchanged. No answer beginnings, evaluator information, hidden-state extraction or interventions enter generation.
+
+The planned matrix contains 1,200 answers: 300 saved original baselines reused after native-input/settings checks, plus 900 new greedy answers. Qwen/Gemma retain batch4 FP16/eager on V100-32GB and a 160-token cap; Ministral retains native batch1 BF16 dequantization on H100 and a 2,048-token cap. New Qwen/Gemma batches interleave the three missing arms within sorted tasks; historical co-batched peers and padded widths differed. The frozen `generation_order` records this actual schedule; a less precise `batch_provenance` phrase does not override it.
+
+Each exact original-context/answer-text unit receives one fresh, globally shuffled, metadata-hidden Codex-assisted six-label review, including reused baseline text. Identical occurrences share that judgment. Original published labels are preserved separately. Headings/style can still reveal formatting, and this is not independent human annotation.
+
+Per-condition rates keep their own resolved denominators. Average R and S effects, interaction `r11-r10-r01+r00`, and each active arm versus baseline use the same fully resolved four-condition task set per model/metric. Twenty thousand paired task-bootstrap resamples preserve each task's four answers together. Useful help, recovery suggestions, refusal, failure category and pressure breakdowns remain descriptive. These all-failure tasks cannot establish preservation of genuine successes; inconclusive intervals do not establish equivalence.
+
+The isolated entry point preserves Nemotron's frozen dependencies:
+
+```sh
+python3 -B -m pipelines.factorial prepare
+python3 -B -m pipelines.factorial run --model qwen3_8b --cache-dir /external/fta_factorial_cache
+python3 -B -m pipelines.factorial packets --cache-dir /external/fta_factorial_cache --output /external/review/packets.jsonl
+python3 -B -m pipelines.factorial score --reviews /external/review/reviews.jsonl
+python3 -B -m pipelines.factorial report --cache-dir /external/fta_factorial_cache --reviews /external/review/reviews.jsonl
+```
+
+Run each model separately on an allocated GPU. Raw journals, native-input checks and crash-protection ledgers stay outside Git. Completed batches are immutable; an unresolved attempt is not silently generated again. Compact answers, labels, one figure/table and exact four-condition examples will be saved under `results/factorial/` after completion.
+
 ## Layout
 
 - `data/`: unchanged original dataset, supplied logical inputs, annotation guide, and original formatter/policy source for verification.
 - `config/`: unchanged policy strings, pinned source/model metadata, archive and preservation records, scheduler settings.
 - `utils/`: five helper modules for IO, input verification, native models, inference runtime, and scoring/report aggregation.
-- `pipelines/`: three replay entry points for preparation, generation, and scoring/reporting, plus one isolated exploratory prompt-state entry point. The isolation preserves the dependencies frozen for the submitted Nemotron job.
+- `pipelines/`: three replay entry points for preparation, generation, and scoring/reporting, plus isolated entry points for the internal-state studies and the prompting-only factorial experiment. The isolation preserves the dependencies frozen for the submitted Nemotron job.
 - `results/`: consolidated comparison answers/labels, model manifests, summary, figure, exact examples, and immutable completed replay in `preserved_exact/`.
 
 Obsolete custom pilots, diagnostics, intervention code, historical review campaigns, and duplicate exports are recoverable outside the active project at `newton:/lustre/fs1/home/sa746371/fta_project_archive`. [Archive metadata](config/archive.json) describes recovery. The previous public Git history is retained; this refactor uses a normal commit, not a history rewrite. Model caches and the original inference environment are preserved outside the repository.
