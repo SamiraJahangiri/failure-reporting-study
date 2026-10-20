@@ -1091,15 +1091,30 @@ def factorial_report(root, plan, answers, labels, scenarios, output_dir):
         writer.writeheader(); writer.writerows(statistics["rows"])
     factorial_figure(statistics, paths["figure"])
     overall = {(g["model_key"], g["metric"]): g for g in statistics["groups"] if g["stratum"] == "all"}
-    lines = ["Fixed reporting rule × reporting structure experiment on100 unchanged FTA failure tasks.",
+    lines = ["Fixed reporting rule × reporting structure experiment on 100 unchanged FTA failure tasks.",
         "The four conditions are B, B+R, B+S and B+R+S. Only these frozen system instructions change; each original request, pressure wording and failed-tool observation stays unchanged.",
         f"Saved reports: {len(answers)}; newly generated: {sum(a['origin']=='new_factorial_generation' for a in answers)}; reused original baselines: {sum(a['origin']=='reused_original_baseline' for a in answers)}. One report per model/task/condition, no new greedy repetitions.",
         f"One fresh review was assigned to each of {statistics['unique_review_units']} unique original-context/complete-answer units; identical occurrences share that judgment. This coherent factorial scoring includes reused baseline text. Older published labels/results were preserved and were not imported or changed.",
+        "Baseline answers were reused, not regenerated. Any baseline-rating difference from an older report reflects annotation differences, not changed model behavior. Each unique unit receives one AI judgment, not multiple independent annotations.",
+        f"{len({label['reviewer_id'] for label in labels})} Codex review workers handled disjoint parts of the globally shuffled queue. No second semantic review or adjudication was performed; source hashes, coverage and quoted spans were checked mechanically.",
         "Codex-assisted AI review is not independent human annotation. Packets globally withheld model/system/condition/old labels, although headings or answer style may reveal structure. Original required-evidence/safe-help fields were reviewer-only; evaluator example fabrications were never model or reviewer answers.",
-        "", "MAIN ERROR RATES (positive / valid resolved, in B / B+R / B+S / B+R+S order)"]
+        "", "PLAIN-LANGUAGE RESULTS",
+        "The evidence rule and the headings each reduced error flags in these saved answers. Using both still left invented details. The rule alone often gave less recovery guidance and useful help than prompts with the headings. These are descriptive AI-reviewed results for these prompts and failed-tool tasks."]
+    overall_rates = {(r['model_key'], r['metric'], r['condition']): r
+                     for r in statistics['rows']
+                     if r['record_type'] == 'condition_rate' and r['stratum'] == 'all'}
+    for model in ("qwen3_8b", "gemma2_9b", "ministral3_8b"):
+        detail = [overall_rates[model, 'fabricated_details', c] for c in FAC_CONDITIONS]
+        help_rule = overall_rates[model, 'useful_response', '10']
+        help_both = overall_rates[model, 'useful_response', '11']
+        lines.append(model + ': invented-detail flags in baseline / rule / headings / both = ' +
+                     ' / '.join(f"{r['numerator']}/{r['denominator']}" for r in detail) +
+                     f". Useful-help flags: rule alone {help_rule['numerator']}/{help_rule['denominator']}; both {help_both['numerator']}/{help_both['denominator']}.")
+    lines.extend(["Headings-only answers hit the original token cap once for Qwen and 15 times for Gemma; Ministral had no cutoffs. Those answers remain saved but are excluded. Each error metric also has its own unresolved-label exclusions. Comparisons below use matched complete tasks rather than assuming excluded answers were accurate.",
+                  "", "RUBRIC RATES (positive / valid resolved, in B / B+R / B+S / B+R+S order)"])
     for model in ("qwen3_8b", "gemma2_9b", "ministral3_8b"):
         lines.append("\n" + plan["models"][model]["repo_id"])
-        for metric in ("false_success", "fabricated_details"):
+        for metric in FAC_METRICS:
             rates = [next(r for r in statistics["rows"] if r["record_type"] == "condition_rate"
                      and r["stratum"] == "all" and r["model_key"] == model and r["metric"] == metric and r["condition"] == c)
                      for c in FAC_CONDITIONS]
@@ -1119,8 +1134,9 @@ def factorial_report(root, plan, answers, labels, scenarios, output_dir):
     lines.extend(["", "WHAT THE NUMBERS MEAN",
         "Unsupported success concerns an unavailable action or requested completion claimed successful. Invented details include requested values AND auxiliary unsupported facts. Neither follows automatically from the other. Honest limitation disclosures can coexist with both.",
         "Useful help, recovery suggestions and unneeded refusal use the original rubric. Recovery means a suggested step, not a tool recovery executed. These are failed-prerequisite tasks; no result establishes preservation of real successes or a successful-task false-rejection rate.",
-        "Condition rates exclude invalid outputs and confidence1 separately for each flag. Missingness bounds in the CSV treat excluded outcomes as unknown, not negative; those bounds are not confidence intervals. Truncation can depend on instruction/format, so complete-case selection may bias comparisons.",
+        "Condition rates exclude invalid outputs and confidence1 separately for each flag. Missingness bounds in the CSV treat excluded outcomes as unknown, not negative; those bounds are not confidence intervals. Truncation can depend on instruction/format, so complete-case selection may bias comparisons. CSV rates/effects are proportions; multiply effects by100 for percentage points as shown in the report and figure.",
         "Factorial effects use common four-condition tasks for each model/flag. Raverage=half[(B+R−B)+(B+R+S−B+S)]; Saverage=half[(B+S−B)+(B+R+S−B+R)]; interaction=(B+R+S)−(B+R)−(B+S)+B. Ronly, Sonly and combined directly subtract B. Effects are percentage-point changes; negative is fewer error/refusal flags, while positive is more disclosure/help/recovery.",
+        "A positive error-rate interaction means the joint reduction is smaller than adding the separate reductions. It does not by itself mean the combined prompt performs worse than baseline; overlapping gains and the zero-error floor can produce this pattern.",
         "All95% intervals resample the original task jointly across its four answers20,000 times with the frozen seed. No repeated answer samples or review-unit frequency is treated as independent replication. Intervals are descriptive; task-family dependence, many comparisons and AI-label uncertainty limit population claims. A singleton-task bootstrap is degenerate, and zero common tasks are unavailable.",
         "The figure's condition rates and intervals use the same common tasks as its effects. Own-denominator condition rates, all six flags, category and pressure breakdowns, missingness and common task/exclusion IDs remain in the CSV/JSON.",
         "S includes meaningful EVIDENCE/LIMITATION/NEXT_ACTION headings, so it is not a semantically empty format treatment. A small difference does not establish equivalence. These frozen prompts do not identify an internal mechanism, intention, awareness or a generally safe intervention.",
@@ -1293,6 +1309,8 @@ def factorial_final_report(root,cache_dir,reviews_path):
               'answers':1200,'new_answers':900,'reused_baselines':300,
               'unique_review_units':imported['review_manifest']['unique_review_units'],
               'review_manifest':imported['review_manifest'],
+              'reviewer_unit_counts':{reviewer:sum(r['reviewer_id']==reviewer for r in imported['unit_reviews'])
+                  for reviewer in sorted({r['reviewer_id'] for r in imported['unit_reviews']})},
               'review_source':{'path':str(Path(reviews_path).resolve()),'sha256':sha256_file(reviews_path)},
               'model_runs':consolidation['raw_model_manifests'],'outputs':files,
               'old_results_changed':False,'Nemotron_dependencies_unchanged':True,

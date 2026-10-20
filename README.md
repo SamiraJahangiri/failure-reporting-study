@@ -100,17 +100,37 @@ python3 -B -m pipelines.internal_states during-report --cache-dir /external/fta_
 Run `during-replay` separately for Qwen, Gemma and Ministral on allocated GPUs. Compressed block vectors stay in three external SQLite caches. Completed records are immutable; a durable pending-generation marker prevents silently repeating a continuation after a crash. All previous FTA and prompt-only results remain intact. The prompt-only report's original source fingerprint refers to [its published commit](https://github.com/SamiraJahangiri/failure-reporting-study/commit/46c73b3c1b24bd8803b423446e807e0dbc39c6c5).
 
 
-## Frozen evidence-rule × reporting-structure experiment
+## Evidence-rule × reporting-structure experiment
 
 A separate prompting-only factorial experiment uses all 100 original FTA questions and failed-tool observations. [The frozen plan](config/factorial.json) and [400 exact logical inputs](data/factorial_inputs.jsonl) were saved before new generation. This is a new ablation, not the authors' original evidence contract.
 
 The four systems are `00=B`, `10=B+R`, `01=B+S` and `11=B+R+S`, joined with exactly two newlines, in B/R/S order. B is the original FTA baseline verbatim. R is the supplied evidence rule; S requests STATUS, EVIDENCE, LIMITATION and NEXT_ACTION headings. S carries meaningful evidence-related content, so its effect is not purely cosmetic. Questions, tool observations and native role adapters are unchanged. No answer beginnings, evaluator information, hidden-state extraction or interventions enter generation.
 
-The planned matrix contains 1,200 answers: 300 saved original baselines reused after native-input/settings checks, plus 900 new greedy answers. Qwen/Gemma retain batch4 FP16/eager on V100-32GB and a 160-token cap; Ministral retains native batch1 BF16 dequantization on H100 and a 2,048-token cap. New Qwen/Gemma batches interleave the three missing arms within sorted tasks; historical co-batched peers and padded widths differed. The frozen `generation_order` records this actual schedule; a less precise `batch_provenance` phrase does not override it.
+The completed matrix contains 1,200 answers: 300 saved original baselines reused after native-input/settings checks, plus 900 new greedy answers. Qwen/Gemma retain batch4 FP16/eager on V100-32GB and a 160-token cap; Ministral retains native batch1 BF16 dequantization on H100 and a 2,048-token cap. New Qwen/Gemma batches interleave the three missing arms within sorted tasks; historical co-batched peers and padded widths differed. The frozen `generation_order` records this actual schedule; a less precise `batch_provenance` phrase does not override it. All three generation jobs finished successfully. The headings-only condition reached the token cap once for Qwen and 15 times for Gemma; Ministral had no cutoffs. These outputs are preserved and excluded, without replacement generations. Nemotron is excluded from this experiment.
 
-Each exact original-context/answer-text unit receives one fresh, globally shuffled, metadata-hidden Codex-assisted six-label review, including reused baseline text. Identical occurrences share that judgment. Original published labels are preserved separately. Headings/style can still reveal formatting, and this is not independent human annotation.
+Each exact original-context/answer-text unit receives one fresh, globally shuffled, metadata-hidden Codex-assisted six-label review, including reused baseline text: 1,168 unique units for 1,200 reports. Identical occurrences share that judgment. Original published labels are preserved separately; any changed baseline rating reflects annotation rather than a new baseline generation. Headings/style can still reveal formatting, and this is not independent human annotation.
+
+**Completed finding:** the evidence rule reduced invented-detail flags in all three models. Headings also helped, and answers with both components were judged more useful than answers with the rule alone. Neither prompt guaranteed accuracy; adding headings did not consistently improve invented-detail rates over the rule alone.
+
+The table counts answers flagged for at least one invented requested or auxiliary detail, using each condition's valid, resolved denominator.
+
+| Model | Baseline | Evidence rule | Four headings | Both |
+| --- | --- | --- | --- | --- |
+| Qwen3-8B | 32/100 | 7/100 | 10/99 | 8/100 |
+| Gemma-2-9b-it | 12/100 | 1/100 | 5/85 | 1/100 |
+| Ministral 3 8B | 51/99 | 18/99 | 38/100 | 14/100 |
+
+Unsupported-success flags were separate: baseline → both was **26/100 → 2/100** for Qwen, **7/100 → 0/100** for Gemma, and **31/100 → 4/100** for Ministral. Useful-help flags under rule alone → both were **65/100 → 96/100**, **41/100 → 100/100**, and **69/100 → 96/100**, respectively. These are rubric judgments about failed-tool answers, not evidence that real successes would be preserved.
+
+The fixed mockup example shows what changed: Qwen's baseline admitted that no mockup was attached, then said “the primary button color is green.” Its rule-only answer said the color could not be determined; its answers with headings asked for the missing attachment. The report copies all four complete answers for this same task in all three models. This example was selected before generation, not after reviewing the outcomes.
+
+Average R effects on invented-detail rates were **−13.1, −8.8, and −29.1 percentage points** for Qwen, Gemma, and Ministral; the corresponding S effects were **−10.1, −4.1, and −8.7 points**. On the same task sets, interactions were **+22.2, +8.2, and +9.2 points**. Positive interaction here means less-than-additive reductions, not that the combined prompt was worse than baseline. The report/figure include all paired 95% intervals; Gemma's average S interval and some interaction intervals include zero. This does not establish equivalence.
+
+[Figure](results/factorial/figure.png) · [Table](results/factorial/results.csv) · [Plain-language report and exact examples](results/factorial/report.txt) · [Answers](results/factorial/answers.jsonl) · [Once-reviewed labels](results/factorial/labels.jsonl) · [Manifest](results/factorial/manifest.json)
 
 Per-condition rates keep their own resolved denominators. Average R and S effects, interaction `r11-r10-r01+r00`, and each active arm versus baseline use the same fully resolved four-condition task set per model/metric. Twenty thousand paired task-bootstrap resamples preserve each task's four answers together. Useful help, recovery suggestions, refusal, failure category and pressure breakdowns remain descriptive. These all-failure tasks cannot establish preservation of genuine successes; inconclusive intervals do not establish equivalence.
+
+The common task counts for the two error metrics are 99 for Qwen, 85 for Gemma and 98 for Ministral. Besides the 16 cutoffs, four unresolved label decisions across three Ministral answers are excluded only from their applicable metrics. Cutoffs may depend on the instruction, so complete-case results can be biased. The three Codex review workers each handled disjoint shuffled units; this was one AI review per unique unit without independent human validation or a second scoring campaign. All seven compact artifacts total about 7.6 MB. No further model generation or internal-state experiment was launched.
 
 The isolated entry point preserves Nemotron's frozen dependencies:
 
@@ -122,7 +142,7 @@ python3 -B -m pipelines.factorial score --reviews /external/review/reviews.jsonl
 python3 -B -m pipelines.factorial report --cache-dir /external/fta_factorial_cache --reviews /external/review/reviews.jsonl
 ```
 
-Run each model separately on an allocated GPU. Raw journals, native-input checks and crash-protection ledgers stay outside Git. Completed batches are immutable; an unresolved attempt is not silently generated again. Compact answers, labels, one figure/table and exact four-condition examples will be saved under `results/factorial/` after completion.
+Run each model separately on an allocated GPU. Raw journals, native-input checks and crash-protection ledgers stay outside Git. Completed batches are immutable; an unresolved attempt is not silently generated again. Compact answers, labels, one figure/table and exact four-condition examples are saved under `results/factorial/`.
 
 ## Layout
 
