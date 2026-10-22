@@ -2046,7 +2046,7 @@ def _prediction_write_table(records, predictions, outer_fold, choices, metric_ro
     ]
     indexed_choices = {r["outer_fold"]: r for r in choices}
     with Path(path).open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         for i, record in enumerate(records):
             selection = indexed_choices[int(outer_fold[i])]["predictors"]
@@ -2092,7 +2092,7 @@ def _prediction_figure(metric_rows, path):
                 axes[2].plot(row["estimate"], position, "o", color=colors[predictor], label=predictor if j == 0 else None)
                 axes[2].hlines(position, row["ci_low"], row["ci_high"], color=colors[predictor])
         axes[2].set(yticks=[0, 1], yticklabels=["AUROC", "Average precision"], xlim=(0, 1.02), xlabel="Held-out score (higher is better)", title="Overall ranking")
-        axes[2].legend(frameon=False, loc="lower right", title="Predictor")
+        axes[2].legend(frameon=False, loc="center left", title="Predictor")
         figure.suptitle("Ministral: prompt-only states predicting existing invented-detail labels", fontsize=11, y=1.02)
         figure.text(.5, -.02, "5 outer / 3 inner task-group folds; 95% intervals resample fixed out-of-fold predictions by task group.", ha="center", fontsize=8)
         figure.tight_layout()
@@ -2141,7 +2141,10 @@ def _prediction_report(records, settings, metric_rows, choices, widths, output_d
         for metric in METRICS:
             lines.append("  " + metric + ": " + "; ".join(p + " " + formatted(indexed[(condition, "metric", metric, p)]) for p in PREDICTORS))
             lines.append("  State improvement B to C: " + formatted(indexed[(condition, "improvement", metric, "B_to_C")]))
-    lines += ["", "Chosen settings, separately inside each outer training set"]
+    lines += [
+        "Instruction-only predictor A assigns the same probability to every answer of a condition within one fitted outer fold. Its pooled within-condition ranking scores can nevertheless differ from chance because the five fitted folds assign different probabilities; these are fold-to-fold effects, not within-condition task discrimination by A.",
+        "", "Chosen settings, separately inside each outer training set",
+    ]
     for fold in choices:
         selection = fold["predictors"]
         lines.append(f"Outer fold {fold['outer_fold']}: {fold['train_records']} train / {fold['test_records']} test answers; {fold['train_groups']} train / {fold['test_groups']} test groups; {fold['test_positives']} test positives. A C={selection['A']['C']}; B C={selection['B']['C']}; C block={selection['C']['block']}, C={selection['C']['C']}. Selected-setting inner losses: A={selection['A']['inner_log_loss']:.5f}, B={selection['B']['inner_log_loss']:.5f}, C={selection['C']['inner_log_loss']:.5f}.")

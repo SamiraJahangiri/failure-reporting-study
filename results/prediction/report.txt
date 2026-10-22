@@ -1,0 +1,93 @@
+MINISTRAL: CAN PROMPT-ONLY STATES PREDICT INVENTED DETAILS?
+
+The states improved held-out prediction beyond instructions and simple task metadata in this exploratory test.
+Primary improvement, held-out log loss B minus C: 0.06933 (95% interval 0.02647 to 0.11715).
+Positive improvement means states helped. Log loss measures how much probability the predictor assigned to the saved correct binary judgment; lower loss is better.
+
+What was reused and what was measured
+All 398 eligible saved Ministral factorial answers were included, spanning 100 original tasks in 93 held-together task groups.
+The outcome is the existing AI-reviewed fabricated_details label (including auxiliary invented details), with 121 positives and 277 negatives. No answer generation, rescoring, or interventions were performed.
+Each vector is the transformer block output at the final input token, before any answer token. The input contains only the exact original factorial instruction and unchanged original user/tool text; no saved answer or evaluator-only evidence.
+Fixed one-based transformer blocks: 17 (4096 coordinates), 26 (4096 coordinates), 34 (4096 coordinates).
+A uses only R, S, and R×S. B adds failure category, pressure type, and exact native input-token count. C adds one of the three fixed state vectors to B.
+
+How evaluation avoided sharing tasks between training and testing
+Five outer grouped folds provide one held-out probability per answer. All conditions of every task and all identified near-duplicate task groups stay together. Three inner grouped folds choose regularization for A/B and the layer plus regularization jointly for C. Fold membership was frozen without using labels, seed 20261022.
+L2 logistic regression: C grid [0.01, 0.1, 1.0, 10.0]; lbfgs; max_iter 5000; tol 1e-07; no class weights. Numerical features and each vector coordinate are standardized using training rows only. The state block is then divided by sqrt(vector width). Metadata categories use training-only one-hot encoding with unknown categories ignored. No PCA or other dimensionality reduction.
+Inner validation loss is pooled over held-out inner records. Frozen tie rule: losses within 1e-12 use smaller C, then shallower block. Outer test results never choose a layer or regularization.
+
+Overall held-out scores
+log_loss, A: 0.57746 (95% interval 0.52151 to 0.63751)
+log_loss, B: 0.49403 (95% interval 0.43270 to 0.55948)
+log_loss, C: 0.42471 (95% interval 0.36174 to 0.49179)
+log_loss improvement, B to C: 0.06933 (95% interval 0.02647 to 0.11715)
+log_loss improvement, A to C: 0.15275 (95% interval 0.08911 to 0.22091)
+log_loss improvement, A to B: 0.08342 (95% interval 0.03643 to 0.13472)
+auroc, A: 0.65802 (95% interval 0.60192 to 0.71635)
+auroc, B: 0.79604 (95% interval 0.73689 to 0.85127)
+auroc, C: 0.84480 (95% interval 0.79485 to 0.89076)
+auroc improvement, B to C: 0.04875 (95% interval 0.00976 to 0.09311)
+auroc improvement, A to C: 0.18677 (95% interval 0.11810 to 0.25305)
+auroc improvement, A to B: 0.13802 (95% interval 0.07766 to 0.19708)
+average_precision, A: 0.43176 (95% interval 0.35848 to 0.51574)
+average_precision, B: 0.65511 (95% interval 0.54735 to 0.76252)
+average_precision, C: 0.75221 (95% interval 0.65838 to 0.82957)
+average_precision improvement, B to C: 0.09709 (95% interval 0.02232 to 0.16986)
+average_precision improvement, A to C: 0.32045 (95% interval 0.23016 to 0.39681)
+average_precision improvement, A to B: 0.22335 (95% interval 0.12663 to 0.32145)
+
+Within each instruction condition
+B (00): 99 answers, 51 invented-detail positives / 48 negatives; 99 tasks and 92 groups.
+  log_loss: A 0.69835 (95% interval 0.69110 to 0.70556); B 0.58908 (95% interval 0.51871 to 0.66045); C 0.56993 (95% interval 0.44515 to 0.69899)
+  State improvement B to C: 0.01915 (95% interval -0.06673 to 0.10126)
+  auroc: A 0.41871 (95% interval 0.31229 to 0.53021); B 0.74673 (95% interval 0.64805 to 0.83878); C 0.77492 (95% interval 0.67882 to 0.86445)
+  State improvement B to C: 0.02819 (95% interval -0.02850 to 0.08734)
+  average_precision: A 0.48251 (95% interval 0.38302 to 0.59687); B 0.78309 (95% interval 0.68271 to 0.87669); C 0.83677 (95% interval 0.74653 to 0.90780)
+  State improvement B to C: 0.05368 (95% interval -0.00221 to 0.11011)
+B+R (10): 99 answers, 18 invented-detail positives / 81 negatives; 99 tasks and 92 groups.
+  log_loss: A 0.49407 (95% interval 0.38463 to 0.61048); B 0.33286 (95% interval 0.25595 to 0.41683); C 0.22372 (95% interval 0.13981 to 0.32305)
+  State improvement B to C: 0.10914 (95% interval 0.04611 to 0.17061)
+  auroc: A 0.35905 (95% interval 0.22332 to 0.49970); B 0.87723 (95% interval 0.76290 to 0.96536); C 0.92730 (95% interval 0.84146 to 0.98688)
+  State improvement B to C: 0.05007 (95% interval -0.02326 to 0.14737)
+  average_precision: A 0.14646 (95% interval 0.09086 to 0.23473); B 0.78100 (95% interval 0.58156 to 0.92377); C 0.84556 (95% interval 0.68117 to 0.95728)
+  State improvement B to C: 0.06457 (95% interval -0.03445 to 0.18654)
+B+S (01): 100 answers, 38 invented-detail positives / 62 negatives; 100 tasks and 93 groups.
+  log_loss: A 0.68051 (95% interval 0.62750 to 0.73379); B 0.60991 (95% interval 0.52112 to 0.70491); C 0.54919 (95% interval 0.47035 to 0.62991)
+  State improvement B to C: 0.06072 (95% interval -0.00450 to 0.13611)
+  auroc: A 0.36863 (95% interval 0.25799 to 0.49242); B 0.69652 (95% interval 0.57931 to 0.80371); C 0.75849 (95% interval 0.66073 to 0.84722)
+  State improvement B to C: 0.06197 (95% interval -0.02479 to 0.15646)
+  average_precision: A 0.31891 (95% interval 0.23444 to 0.43079); B 0.57157 (95% interval 0.40936 to 0.75888); C 0.60778 (95% interval 0.45882 to 0.76699)
+  State improvement B to C: 0.03621 (95% interval -0.11394 to 0.18104)
+B+R+S (11): 100 answers, 14 invented-detail positives / 86 negatives; 100 tasks and 93 groups.
+  log_loss: A 0.43727 (95% interval 0.30727 to 0.58004); B 0.44362 (95% interval 0.29294 to 0.61177); C 0.35543 (95% interval 0.22214 to 0.50701)
+  State improvement B to C: 0.08819 (95% interval 0.03683 to 0.14927)
+  auroc: A 0.25581 (95% interval 0.14627 to 0.37829); B 0.49502 (95% interval 0.29559 to 0.70156); C 0.69518 (95% interval 0.52038 to 0.85597)
+  State improvement B to C: 0.20017 (95% interval 0.07758 to 0.33614)
+  average_precision: A 0.10614 (95% interval 0.06154 to 0.16860); B 0.31695 (95% interval 0.10494 to 0.56467); C 0.47098 (95% interval 0.22550 to 0.71723)
+  State improvement B to C: 0.15402 (95% interval -0.02280 to 0.33298)
+Instruction-only predictor A assigns the same probability to every answer of a condition within one fitted outer fold. Its pooled within-condition ranking scores can nevertheless differ from chance because the five fitted folds assign different probabilities; these are fold-to-fold effects, not within-condition task discrimination by A.
+
+Chosen settings, separately inside each outer training set
+Outer fold 0: 318 train / 80 test answers; 74 train / 19 test groups; 17 test positives. A C=0.1; B C=0.1; C block=26, C=1.0. Selected-setting inner losses: A=0.59393, B=0.53084, C=0.47131.
+Outer fold 1: 306 train / 92 test answers; 74 train / 19 test groups; 41 test positives. A C=1.0; B C=1.0; C block=26, C=10.0. Selected-setting inner losses: A=0.52232, B=0.45712, C=0.39665.
+Outer fold 2: 322 train / 76 test answers; 74 train / 19 test groups; 27 test positives. A C=1.0; B C=1.0; C block=26, C=1.0. Selected-setting inner losses: A=0.57296, B=0.51401, C=0.45361.
+Outer fold 3: 328 train / 70 test answers; 75 train / 18 test groups; 13 test positives. A C=0.1; B C=0.1; C block=26, C=1.0. Selected-setting inner losses: A=0.60100, B=0.54767, C=0.47816.
+Outer fold 4: 318 train / 80 test answers; 75 train / 18 test groups; 23 test positives. A C=1.0; B C=1.0; C block=26, C=10.0. Selected-setting inner losses: A=0.57205, B=0.48597, C=0.41749.
+
+Uncertainty and limits
+Intervals use 20,000 paired task-group cluster bootstrap draws of the saved out-of-fold probabilities, with identical draws for all predictors and conditions. These intervals describe variation among held-out task groups conditional on the fitted fold models. They do not repeat model fitting and do not capture all fitting, AI-label, checkpoint, or task-sampling uncertainty. AUROC and average precision are missing when either class is absent; the table reports valid bootstrap draws.
+Each condition uses its own eligible positive/negative counts. The exact same eligible answer rows and outer folds are used for A, B, and C; missing or unresolved labels and truncated answers were excluded before extraction. Exclusions and exact frozen grouping/fold records are in config/prediction.json.
+The prediction target is the existing AI-reviewed labels on these prompts and failed-tool tasks. Improvement would not prove a causal mechanism, awareness, deliberate deception, or general hallucination detection. A lack of improvement would not prove that the states contain no useful information. Category, pressure, and length are limited controls; residual prompt semantics can still explain predictive information.
+Within-condition comparisons are descriptive secondary results. The primary comparison is overall held-out log loss B minus C, fixed in advance. No overall-accuracy claim is used. No extra models, layers, hyperparameter searches, or experiments were launched.
+
+Files
+results.csv contains one row per held-out answer (label, group, fold, A/B/C probabilities, and chosen outer-fold settings), score and paired-improvement rows for every condition, and inner-candidate losses for reproducibility.
+figure.png is a compact view of the same saved predictions and task-group intervals. config/prediction.json freezes source hashes, eligibility, grouping, folds, layers, settings, and exclusions. Activation arrays and model weights remain outside GitHub.
+
+SOURCE AND RUNTIME PROVENANCE
+Checkpoint: mistralai/Ministral-3-8B-Instruct-2512 @ 5b26027e7b19eeb4b7352e1fed3926375dd2cb4d.
+Native Mistral Common template; official FP8 weights dequantized to BF16 with eager attention on H100. These are reconstructed prompt states, not historical activations captured during answer generation.
+Reused 99 exactly matched baseline prompt states; computed 299 new prompt-only forwards. Every native input/token hash was checked. No answer tokens, new answers, new scoring, or interventions.
+Seven conservative input-only overlap pairs were kept together, giving 93 groups. The authors supplied no duplicate-group labels; these thematic joins are documented in config/prediction.json and do not guarantee exhaustive duplicate detection.
+Pre-data runtime resolution: NumPy 2.4.6 in the external reporting environment replaces the initially inventoried NumPy 2.3.0 because synthetic checks encountered the documented Apple M4 false floating-point warning issue. The seed, groups, folds, predictors and regularization grid were unchanged; see https://github.com/numpy/numpy/issues/29820 .
+Other models and Nemotron were not replayed, modified or monitored in this phase.
