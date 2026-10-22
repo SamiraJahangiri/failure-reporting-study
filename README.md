@@ -144,6 +144,23 @@ python3 -B -m pipelines.factorial report --cache-dir /external/fta_factorial_cac
 
 Run each model separately on an allocated GPU. Raw journals, native-input checks and crash-protection ledgers stay outside Git. Completed batches are immutable; an unresolved attempt is not silently generated again. Compact answers, labels, one figure/table and exact four-condition examples are saved under `results/factorial/`.
 
+## Fixed Ministral prediction test
+
+The follow-up asks whether final-input states predict the existing invented-detail labels beyond the instructions and simple task metadata. [Settings and complete task-group folds](config/prediction.json) were frozen before new state extraction or prediction results. It includes all 398 eligible Ministral factorial answers (121 positive, 277 negative); two unresolved judgments are excluded, with no rescoring. Seven conservative input-only overlap pairs stay together, giving 93 groups for 100 tasks. These joins are documented thematic overlaps rather than author-provided duplicate labels.
+
+Only blocks 17, 26 and 34 are captured: halfway, three-quarter depth rounded upward, and the final decoder block, at the final complete native input token before any answer. Ninety-nine matching baseline vectors can be reused; the remaining 299 inputs require prompt-only forwards with the factorial checkpoint and native template. Saved answers and evaluator evidence never enter the replay input. No generations, interventions, other models or Nemotron changes are part of this test.
+
+Regularized logistic regression compares A (R, S, R×S), B (A plus failure category, pressure and native token count), and C (B plus one fixed block vector). Five grouped outer folds evaluate held-out predictions; three grouped inner folds select regularization and C's block. Every scaler and encoder is fitted only to its training split, with no PCA. The primary result is log loss B minus C; positive values favor added states. AUROC, average precision, within-condition counts and paired group-bootstrap intervals are secondary. Intervals on fixed out-of-fold predictions omit refitting and some label uncertainty. Prediction of these AI judgments would not establish a causal mechanism or general hallucination detection; a null result would not establish absent information.
+
+The same pipeline provides `prediction-extract` on an allocated H100 and `prediction-evaluate` in the pinned external analysis environment:
+
+```sh
+python3 -B -m pipelines.factorial prediction-extract --cache-dir /external/fta_prediction_cache
+python3 -B -m pipelines.factorial prediction-evaluate --cache-dir /external/fta_prediction_cache
+```
+
+States and fitted-prediction checkpoints remain external. One figure, one combined metrics/predictions table, a short report and provenance will be saved in `results/prediction/`. The pre-data runtime resolution in the frozen config documents use of NumPy 2.4.6 after synthetic checks exposed a known Apple M4 warning issue in the initially inventoried NumPy 2.3.0 environment; no scientific settings changed. Stop after this test.
+
 ## Layout
 
 - `data/`: unchanged original dataset, supplied logical inputs, annotation guide, and original formatter/policy source for verification.

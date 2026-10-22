@@ -1,6 +1,7 @@
 """Frozen prompting-only rule × structure ablation on unchanged FTA tasks.
 
-Preparation, generation, one-pass blinded review import and reporting share this
+Preparation, generation, one-pass review, reporting and the fixed Ministral
+prompt-state prediction follow-up share this
 isolated entry point; historical replay dependencies and Nemotron stay untouched.
 """
 from __future__ import annotations
@@ -1320,17 +1321,1025 @@ def factorial_final_report(root,cache_dir,reviews_path):
     return report
 
 
+
+import tempfile
+
+from utils.io import atomic_write_json, atomic_write_jsonl, read_json, read_jsonl, sha256_file
+
+from utils.models import cached_snapshot, digest, verify_snapshot
+
+PREDICTION_EXTRACTION_VERSION = "fta-factorial-ministral-three-fixed-blocks-v1"
+
+def prediction_selected(plan):
+    selected = plan["selected_records"]
+    if not selected or len({r["response_id"] for r in selected}) != len(selected):
+        raise ValueError("Prediction selection is empty or duplicated")
+    if len({(r["scenario_id"], r["condition"]) for r in selected}) != len(selected):
+        raise ValueError("Prediction selection has duplicated task/condition inputs")
+    if any(r["condition"] not in ("00", "10", "01", "11") for r in selected):
+        raise ValueError("Only the four saved factorial conditions are eligible")
+    return selected
+
+def prediction_native_preflight(root, plan):
+    """Validate all original native inputs; return only eligible input tokens."""
+    root = Path(root).resolve()
+    for relative, expected in plan["source_sha256"].items():
+        if sha256_file(root / relative) != expected:
+            raise ValueError("Frozen prediction source changed: " + relative)
+    factorial_plan = read_json(root / "config/factorial.json")
+    spec = factorial_plan["models"]["ministral3_8b"]
+    if spec["key"] != "ministral3_8b" or spec["precision"] != "bfloat16":
+        raise ValueError("Only the original factorial Ministral BF16 checkpoint is allowed")
+    if spec["revision"] != plan["model"]["revision"]:
+        raise ValueError("Frozen prediction checkpoint differs from the factorial run")
+    snapshot = verify_snapshot(spec, require_weights=True)
+    configuration = read_json(cached_snapshot(spec) / "config.json")
+    text_config = configuration.get("text_config", configuration)
+    depth, width = text_config["num_hidden_layers"], text_config["hidden_size"]
+    fixed_blocks = [(depth + 1) // 2, (3 * depth + 3) // 4, depth]
+    if (depth != plan["decoder_blocks"] or width != plan["hidden_size"] or
+            fixed_blocks != plan["blocks_1based"]):
+        raise ValueError("Frozen halfway/three-quarter/final block numbers or dimensions differ")
+    baselines = factorial_baselines(root, factorial_plan)
+    reference = factorial_reference(root, spec, baselines)
+    actual_run = read_json(root / "results/factorial/manifest.json")["model_runs"]["ministral3_8b"]
+    actual_runtime = actual_run["actual_runtime"]
+    if (actual_run["status"] != "complete" or actual_run["revision"] != spec["revision"] or
+            actual_runtime["revision"] != spec["revision"] or
+            actual_runtime["generation"] != spec["generation"] or
+            actual_runtime["weights_precision"] != "bfloat16" or
+            actual_runtime["official_fp8_dequantized"] is not True or
+            actual_runtime["attention_implementation"] != "eager" or
+            actual_runtime["native_adapter"] is not None or actual_runtime["assistant_prefill"] != "" or
+            actual_runtime["padding_side"] != "none_batch1"):
+        raise ValueError("Actual completed factorial runtime differs from the frozen native replay setup")
+    for name in ("model_class", "tokenizer_class", "snapshot", "effective_generation_config"):
+        if actual_runtime[name] != reference["runtime"][name]:
+            raise ValueError("Factorial and original baseline runtime differ: " + name)
+    reference = dict(reference, runtime=actual_runtime, packages=actual_runtime["hardware"]["packages"])
+    records = read_jsonl(root / "data/factorial_inputs.jsonl")
+    tokenizer, prepared = factorial_native_inputs(root, spec, records, snapshot, reference, baselines)
+    # Project metadata immediately: the response and generated IDs never become model inputs.
+    fields = ("response_id", "scenario_id", "condition", "revision", "system", "user",
+              "native_prompt_sha256", "native_input_token_ids_sha256", "input_length")
+    saved = {row["response_id"]: {key: row[key] for key in fields}
+             for row in read_jsonl(root / "results/factorial/answers.jsonl")
+             if row["model_key"] == "ministral3_8b"}
+    if len(saved) != 400:
+        raise ValueError("Expected 400 complete saved Ministral factorial inputs")
+    encoded, checks = [], []
+    for index, record in enumerate(prediction_selected(plan)):
+        answer = saved[record["response_id"]]
+        key = record["scenario_id"], record["condition"]
+        native = prepared[key]["native"]
+        logical = prepared[key]["record"]
+        tokens = prepared[key]["tokens"]
+        if (answer["scenario_id"], answer["condition"], answer["revision"]) != (*key, spec["revision"]):
+            raise ValueError("Selected saved input identity or checkpoint differs")
+        if answer["system"] != logical["system"] or answer["user"] != logical["user"]:
+            raise ValueError("Exact saved factorial message content differs")
+        for name in ("native_prompt_sha256", "native_input_token_ids_sha256", "input_length"):
+            if native[name] != answer[name] or native[name] != record[name]:
+                raise ValueError("Saved/frozen native input metadata differs: " + name)
+        ids = tokens["input_ids"]
+        encoded.append(tokens)
+        checks.append({"index": index, "response_id": record["response_id"],
+                       "scenario_id": key[0], "condition": key[1], "revision": spec["revision"],
+                       "original_messages": native["original_messages"],
+                       "effective_messages": native["effective_messages"],
+                       "native_template_mode": native["native_template_mode"],
+                       "native_prompt": native["native_prompt"],
+                       "native_prompt_sha256": native["native_prompt_sha256"],
+                       "input_token_ids": ids, "input_token_ids_sha256": digest(ids),
+                       "input_length": len(ids), "final_input_token_index": len(ids) - 1,
+                       "final_input_token_id": ids[-1],
+                       "final_input_token_text": tokenizer.decode([ids[-1]], clean_up_tokenization_spaces=False),
+                       "saved_native_hashes_verified": True,
+                       "assistant_prefill": "", "answer_tokens_in_input": False})
+    return spec, snapshot, reference, tokenizer, encoded, checks
+
+def prediction_old_cache(plan, checks, directory):
+    """Reuse old vectors only after complete file, method and exact-input checks."""
+    import numpy as np
+    directory = Path(directory).expanduser().resolve()
+    paths = {"states": directory / "ministral3_8b.npz",
+             "native_checks": directory / "ministral3_8b.native_checks.jsonl",
+             "log": directory / "ministral3_8b.extraction.jsonl",
+             "manifest": directory / "ministral3_8b.manifest.json"}
+    frozen = plan["reuse_cache"]
+    if sha256_file(paths["manifest"]) != frozen["manifest_sha256"]:
+        raise ValueError("Frozen reusable cache manifest changed")
+    manifest = read_json(paths["manifest"])
+    method = manifest["frozen_method"]
+    if (manifest["status"] != "complete" or manifest["model_key"] != "ministral3_8b" or
+            manifest["revision"] != plan["model"]["revision"] or
+            digest(method) != manifest["frozen_signature_sha256"]):
+        raise ValueError("Original reusable prompt cache identity/signature differs")
+    required = {"precision": "torch.bfloat16", "attention_implementation": "eager",
+                "batch_size": 1, "padding": False, "use_cache": False,
+                "original_fp8_dequantized": True, "answer_tokens_in_input": False,
+                "lm_head_called": False}
+    if any(method.get(key) != value for key, value in required.items()):
+        raise ValueError("Original reusable cache numerical method differs")
+    if manifest["backbone_module_path"] != "model.language_model":
+        raise ValueError("Original reusable cache did not capture language decoder blocks")
+    for name in ("states", "native_checks", "log"):
+        actual = sha256_file(paths[name])
+        if actual != frozen["files"][name] or actual != manifest["files"][name]["sha256"]:
+            raise ValueError("Original reusable cache checksum differs: " + name)
+    old_checks = read_jsonl(paths["native_checks"])
+    old_by_key = {(row["scenario_id"], row["condition"]): row for row in old_checks}
+    if len(old_checks) != 300 or len(old_by_key) != 300:
+        raise ValueError("Original reusable cache does not have 300 distinct input checks")
+    result = {}
+    with np.load(paths["states"], allow_pickle=False) as arrays:
+        states = arrays["states"]
+        expected_shape = [300, plan["decoder_blocks"], plan["hidden_size"]]
+        if states.dtype != np.float32 or list(states.shape) != expected_shape or not np.isfinite(states).all():
+            raise ValueError("Original reusable state array shape/precision/finiteness differs")
+        if arrays["scenario_ids"].tolist() != [row["scenario_id"] for row in old_checks]:
+            raise ValueError("Original reusable state task ordering differs")
+        if arrays["conditions"].tolist() != [row["condition"] for row in old_checks]:
+            raise ValueError("Original reusable state policy ordering differs")
+        if arrays["input_lengths"].tolist() != [row["input_length"] for row in old_checks]:
+            raise ValueError("Original reusable input lengths differ")
+        if arrays["final_token_ids"].tolist() != [row["final_input_token_id"] for row in old_checks]:
+            raise ValueError("Original reusable final token IDs differ")
+        for row in checks:
+            # R/S arms were never measured in the old three-policy experiment.
+            if row["condition"] != "00":
+                continue
+            old = old_by_key.get((row["scenario_id"], "baseline"))
+            if old is None:
+                continue
+            comparisons = (("native_prompt_sha256", "rendered_prompt_sha256"),
+                           ("input_token_ids_sha256", "input_token_ids_sha256"),
+                           ("input_length", "input_length"),
+                           ("final_input_token_id", "final_input_token_id"),
+                           ("original_messages", "original_messages"),
+                           ("effective_messages", "effective_messages"))
+            if any(row[new_key] != old[old_key] for new_key, old_key in comparisons):
+                raise ValueError("Reusable baseline native prompt/token match failed")
+            index = old["index"]
+            if old_checks[index] != old:
+                raise ValueError("Original reusable cache index is inconsistent")
+            vector = states[index, np.asarray(plan["blocks_1based"]) - 1, :].copy()
+            result[row["response_id"]] = (vector, {"origin": "reused_exact_old_prompt_state",
+                "source_cache_sha256": frozen["files"]["states"], "source_index": index,
+                "source_condition": "baseline", "source_manifest_sha256": frozen["manifest_sha256"]})
+    return result, manifest
+
+def prediction_extract(root, plan, cache_dir, reuse_dir=None):
+    """Prompt-only native replay; no answer generation, scoring, logits or edits."""
+    import numpy as np
+    root, cache_dir = Path(root).resolve(), Path(cache_dir).expanduser().resolve()
+    if root == cache_dir or root in cache_dir.parents:
+        raise ValueError("Activation caches must remain outside the active project")
+    spec, snapshot, reference, tokenizer, encoded, checks = prediction_native_preflight(root, plan)
+    if reuse_dir is None:
+        reuse_dir = plan["reuse_cache"]["directory_newton"]
+    reused, old_manifest = prediction_old_cache(plan, checks, reuse_dir)
+    method = {"version": PREDICTION_EXTRACTION_VERSION, "plan_sha256": digest(plan),
+              "model": spec["repo_id"], "revision": spec["revision"],
+              "checkpoint_metadata_sha256": snapshot["metadata_sha256"],
+              "native_checks_sha256": digest(checks), "blocks_1based": plan["blocks_1based"],
+              "precision": "torch.bfloat16", "original_fp8_dequantized": True,
+              "attention_implementation": "eager", "batch_size": 1, "padding": False,
+              "use_cache": False, "answer_tokens_in_input": False, "generation_calls": 0,
+              "lm_head_called": False, "capture": "Selected decoder block output at final full native input token, before backbone final norm",
+              "implementation_sha256": digest("\n".join(inspect.getsource(f) for f in
+                    (prediction_selected, prediction_native_preflight, prediction_old_cache, prediction_extract)))}
+    signature = digest(method)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    paths = {key: cache_dir / ("ministral3_8b.prediction." + suffix) for key, suffix in
+             (("states", "npz"), ("native_checks", "native_checks.jsonl"), ("manifest", "manifest.json"),
+              ("ledger", "ledger.sqlite"))}
+    if paths["native_checks"].exists():
+        if read_jsonl(paths["native_checks"]) != checks:
+            raise ValueError("Existing prediction native verification differs")
+    else:
+        atomic_write_jsonl(paths["native_checks"], checks, overwrite=False)
+    if paths["manifest"].exists():
+        manifest = read_json(paths["manifest"])
+        if manifest.get("status") != "complete" or manifest["method_sha256"] != signature:
+            raise ValueError("Existing prediction cache method differs")
+        for name in ("states", "native_checks", "ledger"):
+            if sha256_file(paths[name]) != manifest["files"][name]["sha256"]:
+                raise ValueError("Existing complete prediction cache checksum differs")
+        with np.load(paths["states"], allow_pickle=False) as data:
+            values = data["states"]
+            if (values.dtype != np.float32 or list(values.shape) != manifest["states_shape"] or
+                    not np.isfinite(values).all() or data["response_ids"].tolist() != [r["response_id"] for r in checks]):
+                raise ValueError("Existing complete prediction vectors/order differ")
+        return manifest
+    connection = sqlite3.connect(str(paths["ledger"]), timeout=60)
+    connection.execute("PRAGMA journal_mode=DELETE")
+    connection.execute("PRAGMA synchronous=FULL")
+    connection.execute("CREATE TABLE IF NOT EXISTS settings (name TEXT PRIMARY KEY,value TEXT NOT NULL)")
+    connection.execute("CREATE TABLE IF NOT EXISTS states (response_id TEXT PRIMARY KEY,vector BLOB NOT NULL,metadata TEXT NOT NULL)")
+    saved = connection.execute("SELECT value FROM settings WHERE name='method'").fetchone()
+    if saved is None:
+        with connection:
+            connection.execute("INSERT INTO settings VALUES ('method',?)", (json.dumps(method, sort_keys=True),))
+    elif json.loads(saved[0]) != method:
+        connection.close()
+        raise ValueError("Existing prediction ledger method differs")
+    completed = {row[0] for row in connection.execute("SELECT response_id FROM states")}
+    eligible_ids = {row["response_id"] for row in checks}
+    if not completed <= eligible_ids:
+        raise ValueError("Prediction ledger includes an ineligible response")
+    for response_id, (vector, metadata) in reused.items():
+        if response_id not in completed:
+            with connection:
+                connection.execute("INSERT INTO states VALUES (?,?,?)",
+                    (response_id, sqlite3.Binary(vector.tobytes()), json.dumps(metadata, sort_keys=True)))
+            completed.add(response_id)
+    pending = [i for i, row in enumerate(checks) if row["response_id"] not in completed]
+    hardware, runtime_packages = None, old_manifest["hardware"]["packages"]
+    actual_forwards = 0
+    started = time.monotonic()
+    if pending:
+        if not (os.environ.get("SLURM_JOB_ID") or os.environ.get("PBS_JOBID")):
+            raise RuntimeError("New state forwards require an allocated H100; never run them on a login node")
+        import torch
+        from transformers import FineGrainedFP8Config, Mistral3ForConditionalGeneration
+        if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
+            raise RuntimeError("Prediction extraction requires exactly one allocated CUDA GPU")
+        gpu = torch.cuda.get_device_properties(0)
+        if "H100" not in gpu.name.upper() or gpu.total_memory < 30 * 1024**3:
+            raise RuntimeError("Prediction extraction must preserve the original H100 GPU class")
+        versions = {name: importlib.metadata.version(name) for name in reference["packages"]}
+        for name in reference["packages"]:
+            if versions[name] != reference["packages"][name] or versions[name] != runtime_packages[name]:
+                raise ValueError("Factorial/old-state/runtime package mismatch: " + name)
+        if snapshot["metadata_sha256"] != old_manifest["frozen_method"]["checkpoint_metadata_sha256"]:
+            raise ValueError("Factorial checkpoint metadata differs from the reusable old states")
+        torch.cuda.set_device(0)
+        readiness = torch.zeros(1, device="cuda:0")
+        torch.cuda.synchronize()
+        del readiness
+        hardware = {"scheduler_job_id": os.environ.get("SLURM_JOB_ID", os.environ.get("PBS_JOBID")),
+                    "gpu": gpu.name, "gpu_memory_bytes": gpu.total_memory, "hostname": socket.gethostname(),
+                    "compute_capability": list(torch.cuda.get_device_capability(0)),
+                    "python": platform.python_version(), "packages": versions, "cuda_runtime": torch.version.cuda,
+                    "matmul_allow_tf32": torch.backends.cuda.matmul.allow_tf32,
+                    "cudnn_allow_tf32": torch.backends.cudnn.allow_tf32,
+                    "float32_matmul_precision": torch.get_float32_matmul_precision()}
+        for name in ("gpu", "matmul_allow_tf32", "cudnn_allow_tf32", "float32_matmul_precision"):
+            if hardware[name] != old_manifest["hardware"][name]:
+                raise ValueError("New and reusable state hardware/numerical settings differ: " + name)
+        with connection:
+            connection.execute('INSERT OR REPLACE INTO settings VALUES (?,?)',
+                ('hardware:'+hardware['scheduler_job_id'],json.dumps(hardware,sort_keys=True)))
+        model = Mistral3ForConditionalGeneration.from_pretrained(str(cached_snapshot(spec)), local_files_only=True,
+            trust_remote_code=False, torch_dtype=torch.bfloat16, attn_implementation="eager", device_map="auto",
+            quantization_config=FineGrainedFP8Config(dequantize=True))
+        if type(model).__name__ != reference["runtime"]["model_class"] or any(p.device.type != "cuda" for p in model.parameters()):
+            raise ValueError("Original model architecture or all-GPU loading differs; no offload")
+        model.eval()
+        for parameter in model.parameters():
+            parameter.requires_grad_(False)
+        backbone = model.get_submodule("model.language_model")
+        blocks = backbone.layers
+        if len(blocks) != plan["decoder_blocks"] or backbone.config.hidden_size != plan["hidden_size"]:
+            raise ValueError("Loaded decoder dimensions differ from the frozen prediction plan")
+        if sha256_file(Path(inspect.getfile(type(backbone)))) != old_manifest["backbone_source_sha256"]:
+            raise ValueError("New backbone source differs from the reusable baseline extraction")
+        active, handles = {}, []
+        def capture_at(slot):
+            def capture(_module, _inputs, output):
+                value = output[0] if isinstance(output, (tuple, list)) else output
+                if tuple(value.shape) != (1, active["input_length"], plan["hidden_size"]):
+                    raise ValueError("Unexpected decoder-block output shape")
+                if active["counts"][slot]:
+                    raise ValueError("Decoder block captured repeatedly")
+                active["vectors"][slot] = value[0, -1, :].detach().to(device="cpu", dtype=torch.float32).numpy()
+                active["counts"][slot] += 1
+            return capture
+        try:
+            handles = [blocks[number - 1].register_forward_hook(capture_at(slot))
+                       for slot, number in enumerate(plan["blocks_1based"])]
+            input_device = backbone.get_input_embeddings().weight.device
+            for index in pending:
+                row, tokens = checks[index], encoded[index]
+                active.update(input_length=len(tokens["input_ids"]), counts=[0] * 3,
+                              vectors=np.empty((3, plan["hidden_size"]), dtype=np.float32))
+                tensors = {name: torch.tensor([value], dtype=torch.long, device=input_device)
+                           for name, value in tokens.items()}
+                tick = time.monotonic()
+                with torch.inference_mode():
+                    output = backbone(**tensors, use_cache=False, output_hidden_states=False, output_attentions=False)
+                del output
+                if active["counts"] != [1, 1, 1] or not np.isfinite(active["vectors"]).all():
+                    raise ValueError("A fixed block state is missing/repeated/nonfinite")
+                metadata = {"origin": "new_prompt_only_forward", "scheduler_job_id": hardware["scheduler_job_id"],
+                            "forward_seconds": round(time.monotonic() - tick, 6), "hook_counts": active["counts"]}
+                with connection:
+                    connection.execute("INSERT INTO states VALUES (?,?,?)", (row["response_id"],
+                        sqlite3.Binary(active["vectors"].tobytes()), json.dumps(metadata, sort_keys=True)))
+                actual_forwards += 1
+                if actual_forwards % 25 == 0:
+                    print(json.dumps({"status": "prompt_states", "new_forwards_completed": actual_forwards,
+                                      "total_missing_at_start": len(pending)}), flush=True)
+        finally:
+            for handle in handles:
+                handle.remove()
+    if hardware is None:
+        saved_hardware = connection.execute("SELECT value FROM settings WHERE name LIKE 'hardware:%' ORDER BY name").fetchall()
+        if not saved_hardware:
+            raise ValueError('Completed prediction ledger lacks its runtime provenance')
+        hardware = json.loads(saved_hardware[-1][0])
+    state_rows, provenance = [], []
+    for row in checks:
+        blob, metadata = connection.execute("SELECT vector,metadata FROM states WHERE response_id=?", (row["response_id"],)).fetchone()
+        vector = np.frombuffer(blob, dtype=np.float32).reshape(3, plan["hidden_size"])
+        if not np.isfinite(vector).all():
+            raise ValueError("Nonfinite prediction vector in ledger")
+        state_rows.append(vector.copy())
+        provenance.append({"response_id": row["response_id"], **json.loads(metadata)})
+    connection.close()
+    states = np.stack(state_rows)
+    if paths["states"].exists():
+        with np.load(paths["states"], allow_pickle=False) as existing:
+            if (not np.array_equal(existing["states"], states) or
+                    existing["response_ids"].tolist() != [row["response_id"] for row in checks]):
+                raise ValueError("Unfinalized prediction array differs from its durable ledger")
+    else:
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=cache_dir, delete=False) as handle:
+                temporary = Path(handle.name)
+                np.savez(handle, states=states, response_ids=np.asarray([r["response_id"] for r in checks]),
+                         scenario_ids=np.asarray([r["scenario_id"] for r in checks]),
+                         conditions=np.asarray([r["condition"] for r in checks]),
+                         blocks_1based=np.asarray(plan["blocks_1based"], dtype=np.int32),
+                         input_lengths=np.asarray([r["input_length"] for r in checks], dtype=np.int32),
+                         final_token_ids=np.asarray([r["final_input_token_id"] for r in checks], dtype=np.int64))
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.link(temporary, paths["states"])
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+    manifest = {"status": "complete", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "method": method, "method_sha256": signature, "model_key": "ministral3_8b",
+                "model": spec["repo_id"], "revision": spec["revision"], "states_shape": list(states.shape),
+                "states_dtype": "float32", "blocks_1based": plan["blocks_1based"],
+                "capture_position": "Final input token, immediately before any answer token is predicted",
+                "capture_value": "Decoder block output before final backbone normalization",
+                "hardware": hardware, "provenance": provenance,
+                "old_cache_sha256": plan["reuse_cache"]["files"]["states"],
+                "reused_states": sum(p["origin"] == "reused_exact_old_prompt_state" for p in provenance),
+                "new_prompt_states": sum(p["origin"] == "new_prompt_only_forward" for p in provenance),
+                "forwards_this_invocation": actual_forwards, "generation_calls": 0, "logits_computed": False,
+                "answer_tokens_in_input": False, "semantic_labels_changed": False,
+                "seconds_this_invocation": round(time.monotonic() - started, 6),
+                "numerical_reproduction_limit": "New prompt-state measurements, not historical captures during generation. Exact native tokens, pinned official checkpoint, H100 class, BF16 dequantization and eager attention are verified; reused baselines were measured with the identical extraction method.",
+                "files": {name: {"filename": str(path), "sha256": sha256_file(path), "bytes": path.stat().st_size}
+                          for name, path in paths.items() if name != "manifest"}}
+    atomic_write_json(paths["manifest"], manifest, overwrite=False)
+    print(json.dumps({"status": "complete", "eligible_inputs": len(checks), "blocks_1based": plan["blocks_1based"],
+                      "reused_states": manifest["reused_states"], "new_prompt_states": manifest["new_prompt_states"],
+                      "generation_calls": 0}), flush=True)
+    return manifest
+
+import math
+
+import warnings
+
+from collections import Counter
+
+PREDICTORS = ("A", "B", "C")
+
+CONDITIONS = ("00", "10", "01", "11")
+
+CONDITION_NAMES = {"00": "B", "10": "B+R", "01": "B+S", "11": "B+R+S"}
+
+METRICS = ("log_loss", "auroc", "average_precision")
+
+CONTRASTS = (("B", "C"), ("A", "C"), ("A", "B"))
+
+def _prediction_imports():
+    import numpy as np
+    from sklearn.exceptions import ConvergenceWarning
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import OneHotEncoder, StandardScaler
+    from threadpoolctl import threadpool_limits
+    return np, ConvergenceWarning, LogisticRegression, OneHotEncoder, StandardScaler, threadpool_limits
+
+def _prediction_json_value(value):
+    if hasattr(value, "item"):
+        return value.item()
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    raise TypeError(type(value).__name__)
+
+def _prediction_design(records, states, train, test, predictor, layer=None):
+    """Fit preprocessing only on train; never inspect held-out labels."""
+    np, _, _, OneHotEncoder, StandardScaler, _ = _prediction_imports()
+    numeric = np.asarray([
+        [int(r["condition"][0]), int(r["condition"][1]),
+         int(r["condition"][0]) * int(r["condition"][1]),
+         int(r["input_token_count"])] for r in records
+    ], dtype=np.float64)
+    numeric = numeric[:, :3] if predictor == "A" else numeric
+    scale = StandardScaler().fit(numeric[train])
+    x_train, x_test = [scale.transform(numeric[idx]) for idx in (train, test)]
+    if predictor != "A":
+        categorical = np.asarray([
+            [str(r["failure_category"]), str(r["pressure_type"])] for r in records
+        ], dtype=object)
+        encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False,
+                                dtype=np.float64).fit(categorical[train])
+        x_train = np.column_stack((x_train, encoder.transform(categorical[train])))
+        x_test = np.column_stack((x_test, encoder.transform(categorical[test])))
+    if predictor == "C":
+        vector = np.asarray(states[layer], dtype=np.float64)
+        state_scale = StandardScaler().fit(vector[train])
+        # This fixed block normalization prevents a larger layer width from
+        # automatically receiving a larger average squared feature norm.
+        divisor = math.sqrt(vector.shape[1])
+        x_train = np.column_stack((x_train, state_scale.transform(vector[train]) / divisor))
+        x_test = np.column_stack((x_test, state_scale.transform(vector[test]) / divisor))
+    return x_train, x_test
+
+def _prediction_fit(x_train, y_train, x_test, regularization, settings):
+    np, ConvergenceWarning, LogisticRegression, _, _, threadpool_limits = _prediction_imports()
+    if np.unique(y_train).size != 2:
+        raise ValueError("Frozen training fold has only one label class; no replacement split is allowed")
+    estimator = LogisticRegression(
+        C=float(regularization), penalty="l2", solver="lbfgs",
+        max_iter=int(settings["max_iter"]), tol=float(settings["tol"]),
+        class_weight=None, fit_intercept=True,
+        random_state=int(settings["seed"]),
+    )
+    with threadpool_limits(limits=1), warnings.catch_warnings():
+        warnings.simplefilter("error", ConvergenceWarning)
+        estimator.fit(x_train, y_train)
+    if int(estimator.n_iter_.max()) >= int(settings["max_iter"]):
+        raise RuntimeError("Logistic regression reached frozen iteration limit; evaluation not publishable")
+    prob = estimator.predict_proba(x_test)[:, list(estimator.classes_).index(1)]
+    if (not np.isfinite(estimator.coef_).all() or not np.isfinite(estimator.intercept_).all()
+            or not np.isfinite(prob).all() or ((prob < 0) | (prob > 1)).any()):
+        raise RuntimeError("Logistic regression produced invalid coefficients or probabilities")
+    return prob, int(estimator.n_iter_.max())
+
+def _prediction_loss(y, p):
+    import numpy as np
+    p = np.clip(np.asarray(p, dtype=np.float64), 1e-15, 1 - 1e-15)
+    y = np.asarray(y, dtype=np.float64)
+    return -(y * np.log(p) + (1 - y) * np.log1p(-p))
+
+def _prediction_validate(records, states, settings, folds):
+    import numpy as np
+    ids = [r["response_id"] for r in records]
+    if not records or len(ids) != len(set(ids)):
+        raise ValueError("Prediction records empty or response IDs repeated")
+    if len(folds) != 5 or len(states) != 3:
+        raise ValueError("This test requires exactly five frozen outer folds and three fixed layers")
+    if list(settings["C_grid"]) != [0.01, 0.1, 1.0, 10.0]:
+        raise ValueError("Regularization grid differs from frozen grid")
+    if any(r["condition"] not in CONDITIONS or type(r["label"]) not in (bool, int)
+           or int(r["label"]) not in (0, 1) for r in records):
+        raise ValueError("Invalid condition or non-binary target")
+    task_groups = {}
+    for r in records:
+        if r["scenario_id"] in task_groups and task_groups[r["scenario_id"]] != r["group_id"]:
+            raise ValueError("Conditions of one task were split across groups")
+        task_groups[r["scenario_id"]] = r["group_id"]
+    groups = {r["group_id"] for r in records}
+    seen_outer = []
+    fold_ids = []
+    for fold in folds:
+        fold_ids.append(fold["outer_fold"])
+        test_groups = set(fold["test_groups"])
+        if not test_groups or not test_groups <= groups:
+            raise ValueError("Invalid frozen outer groups")
+        seen_outer.extend(fold["test_groups"])
+        train_groups = groups - test_groups
+        if len(fold["inner_folds"]) != 3:
+            raise ValueError("Exactly three frozen inner folds required")
+        seen_inner = []
+        for inner in fold["inner_folds"]:
+            val_groups = set(inner["validation_groups"])
+            if not val_groups or not val_groups < train_groups:
+                raise ValueError("Frozen inner validation leaks outer test or lacks training groups")
+            seen_inner.extend(inner["validation_groups"])
+        if Counter(seen_inner) != Counter({g: 1 for g in train_groups}):
+            raise ValueError("Inner validation groups do not partition outer training groups")
+    if sorted(fold_ids) != list(range(5)) or Counter(seen_outer) != Counter({g: 1 for g in groups}):
+        raise ValueError("Outer groups do not partition eligible group set")
+    if sorted(int(k) for k in states) != sorted(int(k) for k in settings["blocks"]):
+        raise ValueError("Layer cache does not match three frozen blocks")
+    widths = {}
+    for layer, matrix in states.items():
+        matrix = np.asarray(matrix)
+        if matrix.ndim != 2 or matrix.shape[0] != len(records) or not np.isfinite(matrix).all():
+            raise ValueError("State matrix invalid or misaligned")
+        widths[str(layer)] = int(matrix.shape[1])
+    return widths
+
+def _prediction_normalize_folds(folds):
+    """Accept the frozen plan's explicit *_group_ids names without changing it."""
+    return [
+        {"outer_fold": f["outer_fold"],
+         "test_groups": f["test_groups"] if "test_groups" in f else f["test_group_ids"],
+         "inner_folds": [
+             {"inner_fold": inner["inner_fold"],
+              "validation_groups": (inner["validation_groups"] if "validation_groups" in inner
+                                    else inner["validation_group_ids"])}
+             for inner in f["inner_folds"]]}
+        for f in folds
+    ]
+
+def _prediction_choose(candidates, tolerance):
+    """Tie against the global minimum, not against successive incumbents."""
+    if not candidates or any(not math.isfinite(r["inner_log_loss"]) for r in candidates):
+        raise ValueError("Candidate inner losses must all be finite")
+    minimum = min(r["inner_log_loss"] for r in candidates)
+    return next(r for r in candidates if r["inner_log_loss"] <= minimum + tolerance)
+
+def _prediction_cross_validate(records, states, settings, folds):
+    """Nested group CV. Outer test labels are used only after all fits finish."""
+    import numpy as np
+    folds = _prediction_normalize_folds(folds)
+    widths = _prediction_validate(records, states, settings, folds)
+    labels = np.asarray([int(r["label"]) for r in records], dtype=np.int8)
+    group_array = np.asarray([r["group_id"] for r in records], dtype=object)
+    predictions = {name: np.full(len(records), np.nan) for name in PREDICTORS}
+    outer_fold = np.full(len(records), -1, dtype=int)
+    choices, candidate_scores = [], []
+    layers = sorted(states, key=int)
+    for fold in sorted(folds, key=lambda f: f["outer_fold"]):
+        fold_id = int(fold["outer_fold"])
+        test = np.flatnonzero(np.isin(group_array, fold["test_groups"]))
+        train = np.flatnonzero(~np.isin(group_array, fold["test_groups"]))
+        outer_fold[test] = fold_id
+        fold_choice = {
+            "outer_fold": fold_id,
+            "train_records": int(len(train)), "test_records": int(len(test)),
+            "train_groups": int(len(set(group_array[train]))),
+            "test_groups": int(len(set(group_array[test]))),
+            "train_positives": int(labels[train].sum()),
+            "test_positives": int(labels[test].sum()),
+            "predictors": {},
+        }
+        for predictor in PREDICTORS:
+            candidate_layers = layers if predictor == "C" else [None]
+            # Fit preprocessing once per fold and candidate feature block,
+            # then reuse that fixed transform across regularization settings.
+            transformed = {}
+            for layer in candidate_layers:
+                for inner in fold["inner_folds"]:
+                    val_mask = np.isin(group_array[train], inner["validation_groups"])
+                    inner_train, inner_val = train[~val_mask], train[val_mask]
+                    transformed[(layer, inner["inner_fold"])] = (
+                        inner_train, inner_val,
+                        *_prediction_design(records, states, inner_train, inner_val, predictor, layer),
+                    )
+            candidates = []
+            # Freeze tie order: smaller C first; then shallower layer.
+            for regularization in sorted(settings["C_grid"]):
+                for layer in candidate_layers:
+                    total_loss, total_records, max_iterations = 0.0, 0, 0
+                    for inner in fold["inner_folds"]:
+                        inner_train, inner_val, x_train, x_val = transformed[(layer, inner["inner_fold"])]
+                        prob, iterations = _prediction_fit(
+                            x_train, labels[inner_train], x_val, regularization, settings)
+                        total_loss += float(_prediction_loss(labels[inner_val], prob).sum())
+                        total_records += len(inner_val)
+                        max_iterations = max(max_iterations, iterations)
+                    row = {
+                        "outer_fold": fold_id, "predictor": predictor,
+                        "C": float(regularization), "block": None if layer is None else int(layer),
+                        "inner_log_loss": total_loss / total_records,
+                        "inner_records": int(total_records),
+                        "maximum_inner_fit_iterations": int(max_iterations),
+                    }
+                    candidates.append(row)
+                    candidate_scores.append(row)
+            best = _prediction_choose(candidates, float(settings["tie_tolerance"]))
+            selected_layer = None if best["block"] is None else next(k for k in layers if int(k) == best["block"])
+            x_train, x_test = _prediction_design(records, states, train, test, predictor, selected_layer)
+            prob, iterations = _prediction_fit(x_train, labels[train], x_test, best["C"], settings)
+            predictions[predictor][test] = prob
+            fold_choice["predictors"][predictor] = {
+                "C": best["C"], "block": best["block"],
+                "inner_log_loss": best["inner_log_loss"],
+                "outer_train_fit_iterations": iterations,
+            }
+        choices.append(fold_choice)
+    if any(not np.isfinite(p).all() for p in predictions.values()) or (outer_fold < 0).any():
+        raise RuntimeError("Not every eligible record received one OOF probability for each predictor")
+    return predictions, outer_fold, choices, candidate_scores, widths
+
+def _prediction_metric_batch(labels, probabilities, weights):
+    """Weighted metrics for many fixed-prediction cluster-bootstrap draws.
+
+    Tied probabilities are aggregated before precision/ROC integration. Every
+    bootstrap weight is a multiplicity of a complete held-out task group.
+    AUROC and AP are recorded as missing if either outcome class is absent.
+    """
+    import numpy as np
+    y, p, w = np.asarray(labels), np.asarray(probabilities), np.asarray(weights, dtype=np.float64)
+    if w.ndim == 1:
+        w = w[None, :]
+    total = w.sum(axis=1)
+    positive = w @ y.astype(np.float64)
+    negative = total - positive
+    safe_total = np.where(total > 0, total, np.nan)
+    loss = (w @ _prediction_loss(y, p)) / safe_total
+    order = np.argsort(-p, kind="stable")
+    sorted_p, sorted_y = p[order], y[order]
+    sorted_w = w[:, order]
+    cumulative_positive = np.cumsum(sorted_w * sorted_y, axis=1)
+    cumulative_negative = np.cumsum(sorted_w * (1 - sorted_y), axis=1)
+    ends = np.r_[np.flatnonzero(np.diff(sorted_p) != 0), len(p) - 1]
+    tp = cumulative_positive[:, ends]
+    fp = cumulative_negative[:, ends]
+    delta_tp = np.diff(np.column_stack((np.zeros(len(w)), tp)), axis=1)
+    delta_fp = np.diff(np.column_stack((np.zeros(len(w)), fp)), axis=1)
+    prior_tp = tp - delta_tp
+    # Descending-threshold trapezoid ROC area, including half credit for ties.
+    roc_numerator = np.sum(delta_fp * (tp + prior_tp) * 0.5, axis=1)
+    valid = (positive > 0) & (negative > 0)
+    denominator = np.where(valid, positive * negative, np.nan)
+    auroc = roc_numerator / denominator
+    precision = np.divide(tp, tp + fp, out=np.zeros_like(tp), where=(tp + fp) > 0)
+    average_precision = np.sum(delta_tp * precision, axis=1) / np.where(valid, positive, np.nan)
+    return {"log_loss": loss, "auroc": auroc, "average_precision": average_precision}
+
+def _prediction_metrics(records, predictions, settings):
+    import numpy as np
+    y = np.asarray([int(r["label"]) for r in records], dtype=np.int8)
+    groups = sorted({r["group_id"] for r in records})
+    group_index = {g: i for i, g in enumerate(groups)}
+    row_group = np.asarray([group_index[r["group_id"]] for r in records])
+    scopes = [("all", np.arange(len(records)))] + [
+        (condition, np.asarray([i for i, r in enumerate(records) if r["condition"] == condition]))
+        for condition in CONDITIONS
+    ]
+    point, bootstrap = {}, {}
+    for scope, idx in scopes:
+        if len(idx) == 0:
+            raise ValueError("Frozen eligible data lack an entire instruction condition")
+        for predictor in PREDICTORS:
+            for metric, values in _prediction_metric_batch(y[idx], predictions[predictor][idx], np.ones(len(idx))).items():
+                point[(scope, predictor, metric)] = float(values[0])
+                bootstrap[(scope, predictor, metric)] = []
+    rng = np.random.default_rng(int(settings["seed"]))
+    n_resamples, batch_size = int(settings["bootstrap_resamples"]), 250
+    draw_digest = hashlib.sha256()
+    # The identical group multiplicities are shared by all predictors, metrics,
+    # and conditions. A near-duplicate group, rather than an individual answer,
+    # is the resampling unit if grouping merged multiple original tasks.
+    for start in range(0, n_resamples, batch_size):
+        size = min(batch_size, n_resamples - start)
+        cluster_weights = rng.multinomial(len(groups), np.full(len(groups), 1 / len(groups)), size=size)
+        draw_digest.update(cluster_weights.astype("<i4").tobytes())
+        weights = cluster_weights[:, row_group].astype(np.float64)
+        for scope, idx in scopes:
+            for predictor in PREDICTORS:
+                for metric, values in _prediction_metric_batch(y[idx], predictions[predictor][idx], weights[:, idx]).items():
+                    bootstrap[(scope, predictor, metric)].append(values)
+    bootstrap = {key: np.concatenate(value) for key, value in bootstrap.items()}
+    rows = []
+    for scope, idx in scopes:
+        metadata = {
+            "scope": scope, "records": len(idx), "positives": int(y[idx].sum()),
+            "negatives": int(len(idx) - y[idx].sum()),
+            "tasks": len({records[i]["scenario_id"] for i in idx}),
+            "groups": len({records[i]["group_id"] for i in idx}),
+        }
+        for metric in METRICS:
+            for predictor in PREDICTORS:
+                values = bootstrap[(scope, predictor, metric)]
+                finite = values[np.isfinite(values)]
+                estimate = point[(scope, predictor, metric)]
+                low, high = np.quantile(finite, [.025, .975]) if len(finite) else (float("nan"), float("nan"))
+                rows.append({**metadata, "record_type": "metric", "metric": metric,
+                             "predictor": predictor, "contrast": "", "estimate": estimate,
+                             "ci_low": float(low), "ci_high": float(high),
+                             "valid_bootstrap_draws": len(finite), "bootstrap_draws": n_resamples})
+            for first, second in CONTRASTS:
+                # For log loss positive means second is better; for AUROC/AP
+                # positive also means second is better, reversing subtraction.
+                sign = 1 if metric == "log_loss" else -1
+                values = sign * (bootstrap[(scope, first, metric)] - bootstrap[(scope, second, metric)])
+                estimate = sign * (point[(scope, first, metric)] - point[(scope, second, metric)])
+                finite = values[np.isfinite(values)]
+                low, high = np.quantile(finite, [.025, .975]) if len(finite) else (float("nan"), float("nan"))
+                rows.append({**metadata, "record_type": "improvement", "metric": metric,
+                             "predictor": "", "contrast": first + "_to_" + second,
+                             "estimate": estimate, "ci_low": float(low), "ci_high": float(high),
+                             "valid_bootstrap_draws": len(finite), "bootstrap_draws": n_resamples})
+    return rows, draw_digest.hexdigest()
+
+def _prediction_write_table(records, predictions, outer_fold, choices, metric_rows, candidate_rows, path):
+    columns = [
+        "record_type", "response_id", "scenario_id", "group_id", "condition",
+        "failure_category", "pressure_type", "input_token_count", "label", "outer_fold",
+        "p_A", "p_B", "p_C", "A_C", "B_C", "C_C", "C_block", "scope", "metric",
+        "predictor", "contrast", "estimate", "ci_low", "ci_high", "records", "positives",
+        "negatives", "tasks", "groups", "valid_bootstrap_draws", "bootstrap_draws",
+        "inner_log_loss", "inner_records", "maximum_inner_fit_iterations", "C", "block",
+    ]
+    indexed_choices = {r["outer_fold"]: r for r in choices}
+    with Path(path).open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        for i, record in enumerate(records):
+            selection = indexed_choices[int(outer_fold[i])]["predictors"]
+            row = {key: record[key] for key in columns if key in record}
+            row.update(record_type="prediction", outer_fold=int(outer_fold[i]),
+                       p_A=float(predictions["A"][i]), p_B=float(predictions["B"][i]), p_C=float(predictions["C"][i]),
+                       A_C=selection["A"]["C"], B_C=selection["B"]["C"],
+                       C_C=selection["C"]["C"], C_block=selection["C"]["block"])
+            writer.writerow(row)
+        for row in metric_rows:
+            writer.writerow({key: ("" if isinstance(value, float) and not math.isfinite(value) else value)
+                             for key, value in row.items()})
+        for row in candidate_rows:
+            writer.writerow({"record_type": "inner_candidate", **row})
+
+def _prediction_figure(metric_rows, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    indexed = {(r["scope"], r["record_type"], r["metric"], r["predictor"] or r["contrast"]): r for r in metric_rows}
+    with plt.rc_context({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False}):
+        figure, axes = plt.subplots(1, 3, figsize=(12, 3.8), gridspec_kw={"width_ratios": [1, 1.35, 1.2]})
+        colors = {"A": "#747474", "B": "#3074a8", "C": "#c34e35"}
+        for i, predictor in enumerate(PREDICTORS):
+            row = indexed[("all", "metric", "log_loss", predictor)]
+            axes[0].plot(i, row["estimate"], "o", color=colors[predictor])
+            axes[0].vlines(i, row["ci_low"], row["ci_high"], color=colors[predictor])
+        axes[0].set(xticks=range(3), xticklabels=["A: instructions", "B: + metadata", "C: + states"], ylabel="Held-out log loss", title="Overall prediction (lower is better)")
+        axes[0].tick_params(axis="x", rotation=20)
+        scopes = ["all", *CONDITIONS]
+        for i, scope in enumerate(scopes):
+            row = indexed[(scope, "improvement", "log_loss", "B_to_C")]
+            axes[1].plot(row["estimate"], i, "o", color=colors["C"])
+            axes[1].hlines(i, row["ci_low"], row["ci_high"], color=colors["C"])
+        axes[1].axvline(0, color="0.55", lw=0.7)
+        axes[1].set(yticks=range(5), yticklabels=["Overall", *[CONDITION_NAMES[c] for c in CONDITIONS]], xlabel="Log loss B − C (positive favors states)", title="Added information beyond metadata")
+        axes[1].invert_yaxis()
+        for j, metric in enumerate(("auroc", "average_precision")):
+            for i, predictor in enumerate(PREDICTORS):
+                row = indexed[("all", "metric", metric, predictor)]
+                position = j + (i - 1) * .18
+                axes[2].plot(row["estimate"], position, "o", color=colors[predictor], label=predictor if j == 0 else None)
+                axes[2].hlines(position, row["ci_low"], row["ci_high"], color=colors[predictor])
+        axes[2].set(yticks=[0, 1], yticklabels=["AUROC", "Average precision"], xlim=(0, 1.02), xlabel="Held-out score (higher is better)", title="Overall ranking")
+        axes[2].legend(frameon=False, loc="lower right", title="Predictor")
+        figure.suptitle("Ministral: prompt-only states predicting existing invented-detail labels", fontsize=11, y=1.02)
+        figure.text(.5, -.02, "5 outer / 3 inner task-group folds; 95% intervals resample fixed out-of-fold predictions by task group.", ha="center", fontsize=8)
+        figure.tight_layout()
+        figure.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close(figure)
+
+def _prediction_report(records, settings, metric_rows, choices, widths, output_dir):
+    indexed = {(r["scope"], r["record_type"], r["metric"], r["predictor"] or r["contrast"]): r for r in metric_rows}
+    def formatted(row):
+        if not math.isfinite(row["estimate"]):
+            return "not defined (only one outcome class)"
+        return f"{row['estimate']:.5f} (95% interval {row['ci_low']:.5f} to {row['ci_high']:.5f})"
+    primary = indexed[("all", "improvement", "log_loss", "B_to_C")]
+    if primary["ci_low"] > 0:
+        conclusion = "The states improved held-out prediction beyond instructions and simple task metadata in this exploratory test."
+    elif primary["ci_high"] < 0:
+        conclusion = "Adding the states worsened held-out prediction relative to instructions and simple task metadata in this exploratory test."
+    else:
+        conclusion = "This test did not clearly establish improved prediction beyond instructions and simple task metadata; the paired interval includes zero."
+    lines = [
+        "MINISTRAL: CAN PROMPT-ONLY STATES PREDICT INVENTED DETAILS?", "", conclusion,
+        "Primary improvement, held-out log loss B minus C: " + formatted(primary) + ".",
+        "Positive improvement means states helped. Log loss measures how much probability the predictor assigned to the saved correct binary judgment; lower loss is better.",
+        "", "What was reused and what was measured",
+        f"All {len(records)} eligible saved Ministral factorial answers were included, spanning {len({r['scenario_id'] for r in records})} original tasks in {len({r['group_id'] for r in records})} held-together task groups.",
+        f"The outcome is the existing AI-reviewed fabricated_details label (including auxiliary invented details), with {sum(int(r['label']) for r in records)} positives and {sum(1-int(r['label']) for r in records)} negatives. No answer generation, rescoring, or interventions were performed.",
+        "Each vector is the transformer block output at the final input token, before any answer token. The input contains only the exact original factorial instruction and unchanged original user/tool text; no saved answer or evaluator-only evidence.",
+        "Fixed one-based transformer blocks: " + ", ".join(f"{k} ({widths[str(k)]} coordinates)" for k in sorted(settings['blocks'])) + ".",
+        "A uses only R, S, and R×S. B adds failure category, pressure type, and exact native input-token count. C adds one of the three fixed state vectors to B.",
+        "", "How evaluation avoided sharing tasks between training and testing",
+        f"Five outer grouped folds provide one held-out probability per answer. All conditions of every task and all identified near-duplicate task groups stay together. Three inner grouped folds choose regularization for A/B and the layer plus regularization jointly for C. Fold membership was frozen without using labels, seed {settings['seed']}.",
+        f"L2 logistic regression: C grid {settings['C_grid']}; lbfgs; max_iter {settings['max_iter']}; tol {settings['tol']}; no class weights. Numerical features and each vector coordinate are standardized using training rows only. The state block is then divided by sqrt(vector width). Metadata categories use training-only one-hot encoding with unknown categories ignored. No PCA or other dimensionality reduction.",
+        "Inner validation loss is pooled over held-out inner records. Frozen tie rule: losses within 1e-12 use smaller C, then shallower block. Outer test results never choose a layer or regularization.",
+        "", "Overall held-out scores",
+    ]
+    for metric in METRICS:
+        for predictor in PREDICTORS:
+            lines.append(f"{metric}, {predictor}: " + formatted(indexed[("all", "metric", metric, predictor)]))
+        for first, second in CONTRASTS:
+            name = first + "_to_" + second
+            lines.append(f"{metric} improvement, {first} to {second}: " + formatted(indexed[("all", "improvement", metric, name)]))
+    lines += ["", "Within each instruction condition"]
+    for condition in CONDITIONS:
+        count = indexed[(condition, "metric", "log_loss", "A")]
+        lines.append(f"{CONDITION_NAMES[condition]} ({condition}): {count['records']} answers, {count['positives']} invented-detail positives / {count['negatives']} negatives; {count['tasks']} tasks and {count['groups']} groups.")
+        for metric in METRICS:
+            lines.append("  " + metric + ": " + "; ".join(p + " " + formatted(indexed[(condition, "metric", metric, p)]) for p in PREDICTORS))
+            lines.append("  State improvement B to C: " + formatted(indexed[(condition, "improvement", metric, "B_to_C")]))
+    lines += ["", "Chosen settings, separately inside each outer training set"]
+    for fold in choices:
+        selection = fold["predictors"]
+        lines.append(f"Outer fold {fold['outer_fold']}: {fold['train_records']} train / {fold['test_records']} test answers; {fold['train_groups']} train / {fold['test_groups']} test groups; {fold['test_positives']} test positives. A C={selection['A']['C']}; B C={selection['B']['C']}; C block={selection['C']['block']}, C={selection['C']['C']}. Selected-setting inner losses: A={selection['A']['inner_log_loss']:.5f}, B={selection['B']['inner_log_loss']:.5f}, C={selection['C']['inner_log_loss']:.5f}.")
+    lines += [
+        "", "Uncertainty and limits",
+        f"Intervals use {settings['bootstrap_resamples']:,} paired task-group cluster bootstrap draws of the saved out-of-fold probabilities, with identical draws for all predictors and conditions. These intervals describe variation among held-out task groups conditional on the fitted fold models. They do not repeat model fitting and do not capture all fitting, AI-label, checkpoint, or task-sampling uncertainty. AUROC and average precision are missing when either class is absent; the table reports valid bootstrap draws.",
+        "Each condition uses its own eligible positive/negative counts. The exact same eligible answer rows and outer folds are used for A, B, and C; missing or unresolved labels and truncated answers were excluded before extraction. Exclusions and exact frozen grouping/fold records are in config/prediction.json.",
+        "The prediction target is the existing AI-reviewed labels on these prompts and failed-tool tasks. Improvement would not prove a causal mechanism, awareness, deliberate deception, or general hallucination detection. A lack of improvement would not prove that the states contain no useful information. Category, pressure, and length are limited controls; residual prompt semantics can still explain predictive information.",
+        "Within-condition comparisons are descriptive secondary results. The primary comparison is overall held-out log loss B minus C, fixed in advance. No overall-accuracy claim is used. No extra models, layers, hyperparameter searches, or experiments were launched.",
+        "", "Files",
+        "results.csv contains one row per held-out answer (label, group, fold, A/B/C probabilities, and chosen outer-fold settings), score and paired-improvement rows for every condition, and inner-candidate losses for reproducibility.",
+        "figure.png is a compact view of the same saved predictions and task-group intervals. config/prediction.json freezes source hashes, eligibility, grouping, folds, layers, settings, and exclusions. Activation arrays and model weights remain outside GitHub.",
+    ]
+    Path(output_dir, "report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+def evaluate_prediction(records, states, settings, folds, output_dir):
+    """Evaluate once and save one figure, combined table, and short report.
+
+    Required settings: seed, C_grid, max_iter, tol, tie_tolerance, blocks,
+    bootstrap_resamples. State matrices must follow exact frozen record order.
+    Returns serializable evaluation details for the caller's provenance record.
+    """
+    np, _, _, _, _, threadpool_limits = _prediction_imports()
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if (any((output_dir / name).exists() for name in ("results.csv", "figure.png", "report.txt"))
+            and not Path(settings['fit_checkpoint']).exists()):
+        raise FileExistsError("Prediction outputs exist without a signed fitted-prediction checkpoint")
+    checkpoint = Path(settings['fit_checkpoint'])
+    signature = digest({'records': records, 'settings': settings, 'folds': folds,
+                        'implementation': '\n'.join(inspect.getsource(f) for f in
+                            (_prediction_design, _prediction_fit, _prediction_choose,
+                             _prediction_cross_validate, _prediction_normalize_folds))})
+    with threadpool_limits(limits=1):
+        if checkpoint.exists():
+            saved = read_json(checkpoint)
+            if saved['signature'] != signature:
+                raise ValueError('Existing fitted-prediction checkpoint differs; no repeat fitting')
+            predictions = {k: np.asarray(v, dtype=np.float64) for k,v in saved['predictions'].items()}
+            outer_fold = np.asarray(saved['outer_fold'], dtype=int)
+            choices, candidate_scores, widths = saved['choices'], saved['candidate_scores'], saved['widths']
+        else:
+            predictions, outer_fold, choices, candidate_scores, widths = _prediction_cross_validate(records, states, settings, folds)
+            atomic_write_json(checkpoint, {'signature': signature,
+                'predictions': {k:v.tolist() for k,v in predictions.items()},
+                'outer_fold': outer_fold.tolist(), 'choices': choices,
+                'candidate_scores': candidate_scores, 'widths': widths}, overwrite=False)
+        metric_rows, draws_sha256 = _prediction_metrics(records, predictions, settings)
+    _prediction_write_table(records, predictions, outer_fold, choices, metric_rows, candidate_scores, output_dir / "results.csv")
+    _prediction_figure(metric_rows, output_dir / "figure.png")
+    _prediction_report(records, settings, metric_rows, choices, widths, output_dir)
+    summary = {
+        "records": len(records), "tasks": len({r["scenario_id"] for r in records}),
+        "groups": len({r["group_id"] for r in records}), "state_widths": widths,
+        "outer_choices": choices, "metric_rows": metric_rows,
+        "bootstrap_draws_sha256": draws_sha256,
+        "candidate_fit_count": 5 * (4 * 3 + 4 * 3 + 12 * 3) + 5 * 3,
+        "outer_test_used_for_selection": False, "dimensionality_reduction": "none",
+        "confidence_intervals": "paired fixed-OOF-prediction task-group cluster bootstrap; conditional on fits",
+    }
+    # Round-trip prevents accidental NumPy-only objects in caller manifests.
+    return json.loads(json.dumps(summary, default=_prediction_json_value))
+
+
+def prediction_verify_sources(root, plan):
+    """Mechanical saved-label/eligibility joins; never review answer semantics."""
+    root = Path(root)
+    for group in ('source_sha256', 'preserved_files_sha256'):
+        for name, expected in plan[group].items():
+            if sha256_file(root/name) != expected:
+                raise ValueError('Preserved prediction source changed: '+name)
+    if (plan['seed'] != 20261022 or plan['model_key'] != 'ministral3_8b'
+            or plan['blocks_1based'] != [17,26,34]):
+        raise ValueError('Unexpected fixed prediction design')
+    answers = [a for a in read_jsonl(root/'results/factorial/answers.jsonl')
+               if a['model_key']=='ministral3_8b']
+    labels = {l['response_id']:l for l in read_jsonl(root/'results/factorial/labels.jsonl')}
+    eligible = {a['response_id']:a for a in answers if fac_valid(a)
+                and fac_known(labels[a['response_id']], 'fabricated_details')}
+    selected = prediction_selected(plan)
+    if len(answers)!=400 or set(eligible)!={r['response_id'] for r in selected}:
+        raise ValueError('Frozen selection does not contain every eligible Ministral record')
+    for record in selected:
+        answer, label = eligible[record['response_id']], labels[record['response_id']]
+        if (record['label'] != int(label['rubric_labels']['fabricated_details'])
+                or label['response_sha256'] != fac_digest(answer['response'])
+                or record['input_token_count'] != answer['input_length']
+                or record['scenario_id'] != answer['scenario_id']
+                or record['condition'] != answer['condition']):
+            raise ValueError('Frozen record differs from saved target or input metadata')
+    return selected
+
+
+def prediction_analyze(root, plan, cache_dir):
+    """One nested prediction test from fixed external vectors and saved labels."""
+    import numpy as np
+    root, cache_dir = Path(root).resolve(), Path(cache_dir).resolve()
+    records = prediction_verify_sources(root, plan)
+    runtime = plan['runtime_resolution']
+    actual_packages = {name:importlib.metadata.version(name) for name in runtime['analysis_packages']}
+    if actual_packages != runtime['analysis_packages']:
+        raise ValueError('Resolved analysis packages differ from the pre-data frozen runtime')
+    prefix = 'ministral3_8b.prediction.'
+    extraction_path = cache_dir/(prefix+'manifest.json')
+    extraction = read_json(extraction_path)
+    if (extraction['status']!='complete' or extraction['method']['plan_sha256']!=digest(plan)
+            or extraction['method_sha256']!=digest(extraction['method'])
+            or extraction['reused_states']!=99 or extraction['new_prompt_states']!=299
+            or extraction['generation_calls']!=0 or extraction['answer_tokens_in_input']):
+        raise ValueError('Extraction does not match the frozen prompt-only prediction test')
+    for key, suffix in [('states','npz'),('native_checks','native_checks.jsonl')]:
+        if sha256_file(cache_dir/(prefix+suffix)) != extraction['files'][key]['sha256']:
+            raise ValueError('External prediction extraction file changed: '+key)
+    with np.load(cache_dir/(prefix+'npz'), allow_pickle=False) as arrays:
+        values = arrays['states']
+        if (values.shape!=(398,3,4096) or values.dtype!=np.float32 or not np.isfinite(values).all()
+                or arrays['response_ids'].tolist()!=[r['response_id'] for r in records]
+                or arrays['blocks_1based'].tolist()!=plan['blocks_1based']
+                or arrays['input_lengths'].tolist()!=[r['input_token_count'] for r in records]):
+            raise ValueError('External vectors differ from frozen eligible records/blocks')
+        states = {block:values[:,i,:].copy() for i,block in enumerate(plan['blocks_1based'])}
+    output = root/'results/prediction'
+    if (output/'manifest.json').exists():
+        saved = read_json(output/'manifest.json')
+        if saved['plan_file_sha256'] != sha256_file(root/'config/prediction.json'):
+            raise ValueError('Existing prediction report uses another frozen plan')
+        for name, entry in saved['outputs'].items():
+            if sha256_file(output/name)!=entry['sha256']:
+                raise ValueError('Existing prediction report changed: '+name)
+        return {'status':'reused_complete', 'primary':saved['primary']}
+    settings = dict(plan['evaluation'], seed=plan['seed'], blocks=plan['blocks_1based'],
+                    fit_checkpoint=str(cache_dir/'nested_fit_predictions.json'),
+                    plan_file_sha256=sha256_file(root/'config/prediction.json'),
+                    state_file_sha256=extraction['files']['states']['sha256'])
+    evaluated = evaluate_prediction(records, states, settings,
+                                    plan['cross_validation']['folds'], output)
+    # This provenance addition changes no labels, predictions, settings or metrics.
+    report_path = output/'report.txt'
+    report = report_path.read_text()
+    provenance = [
+        'Checkpoint: '+plan['model']['repo_id']+' @ '+plan['model']['revision']+'.',
+        'Native Mistral Common template; official FP8 weights dequantized to BF16 with eager attention on H100. These are reconstructed prompt states, not historical activations captured during answer generation.',
+        'Reused 99 exactly matched baseline prompt states; computed 299 new prompt-only forwards. Every native input/token hash was checked. No answer tokens, new answers, new scoring, or interventions.',
+        'Seven conservative input-only overlap pairs were kept together, giving 93 groups. The authors supplied no duplicate-group labels; these thematic joins are documented in config/prediction.json and do not guarantee exhaustive duplicate detection.',
+        'Pre-data runtime resolution: NumPy 2.4.6 in the external reporting environment replaces the initially inventoried NumPy 2.3.0 because synthetic checks encountered the documented Apple M4 false floating-point warning issue. The seed, groups, folds, predictors and regularization grid were unchanged; see https://github.com/numpy/numpy/issues/29820 .',
+        'Other models and Nemotron were not replayed, modified or monitored in this phase.'
+    ]
+    report_path.write_text(report+'\nSOURCE AND RUNTIME PROVENANCE\n'+'\n'.join(provenance)+'\n')
+    primary = next(r for r in evaluated['metric_rows'] if r['scope']=='all'
+                   and r['record_type']=='improvement' and r['metric']=='log_loss'
+                   and r['contrast']=='B_to_C')
+    source_check = prediction_verify_sources(root, plan)
+    assert len(source_check)==398
+    outputs = {name:{'sha256':sha256_file(output/name),'bytes':(output/name).stat().st_size}
+               for name in ('results.csv','figure.png','report.txt')}
+    manifest = {'phase':plan['phase'], 'created_at':factorial_utc(),
+        'plan_file_sha256':sha256_file(root/'config/prediction.json'),
+        'pipeline_sha256':sha256_file(Path(__file__).resolve()),
+        'records':398, 'tasks':100, 'groups':93, 'primary':primary,
+        'target':'Existing factorial fabricated_details AI judgments, unchanged',
+        'new_answers':0,'label_reviews':0,'activation_interventions':False,
+        'other_models_replayed':[], 'Nemotron_touched':False,
+        'actual_analysis_packages':actual_packages,'analysis_python':platform.python_version(),
+        'extraction_manifest_sha256':sha256_file(extraction_path),
+        'extraction':{k:extraction[k] for k in ('method','method_sha256','model','revision',
+            'states_shape','blocks_1based','hardware','reused_states','new_prompt_states',
+            'generation_calls','logits_computed','answer_tokens_in_input','files')},
+        'evaluation':evaluated,'outputs':outputs,'preserved_sources_verified':True,
+        'stop_after_this_test':True}
+    atomic_write_json(output/'manifest.json',manifest,overwrite=False)
+    return {'status':'complete','records':398,'primary':primary,
+            'compact_output_bytes':sum(p.stat().st_size for p in output.iterdir() if p.is_file())}
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=('prepare','run','consolidate','packets','score','report'))
+    parser.add_argument('command',choices=('prepare','run','consolidate','packets','score','report',
+                                         'prediction-extract','prediction-evaluate'))
     parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     parser.add_argument('--plan',type=Path)
     parser.add_argument('--model',choices=FACTORIAL_MODEL_KEYS)
     parser.add_argument('--cache-dir',type=Path)
     parser.add_argument('--output',type=Path)
     parser.add_argument('--reviews',type=Path)
-    args=parser.parse_args();root=args.root.resolve();plan_path=args.plan or root/'config/factorial.json'
-    if args.command=='prepare':
+    args=parser.parse_args();root=args.root.resolve()
+    plan_path=args.plan or root/('config/prediction.json' if args.command.startswith('prediction-') else 'config/factorial.json')
+    if args.command.startswith('prediction-'):
+        if not args.cache_dir:parser.error(args.command+' requires external --cache-dir')
+        plan=read_json(plan_path)
+        prediction_verify_sources(root,plan)
+        if args.command=='prediction-extract':
+            with (args.cache_dir.parent/'.fta_prediction_extraction.lock').open('a') as lock:
+                fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                r=prediction_extract(root,plan,args.cache_dir)
+            result={'status':r['status'],'records':len(plan['selected_records']),
+                    'reused_states':r['reused_states'],'new_prompt_states':r['new_prompt_states']}
+        else:result=prediction_analyze(root,plan,args.cache_dir)
+    elif args.command=='prepare':
         p=prepare_factorial(root,plan_path);result={'inputs':p['inputs_count'],'plan_sha256':sha256_file(plan_path)}
     elif args.command=='run':
         if not args.model or not args.cache_dir:parser.error('run requires --model and external --cache-dir')
