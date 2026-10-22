@@ -4024,8 +4024,8 @@
   "outputs": {
     "html": {
       "file": "results/pca.html",
-      "sha256": "7dfc9b4cc86ee5707fbb3f67ab5b21ac5742e1dfe27470c6d00008100d62d4a9",
-      "bytes": 5540215
+      "sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
+      "bytes": 5445093
     },
     "png": {
       "file": "results/pca.png",
@@ -4039,12 +4039,13 @@
     },
     "txt": {
       "file": "results/pca.txt",
-      "sha256": "901f1e1db0de5b754bf9416d104ac5cf0c1b6f18a4af1b8c7ef0750c80437195",
-      "bytes": 5177
+      "sha256": "02331957eb962319a3cd1cf32691f13d34c9c44c4507f920469c0091a0fed116",
+      "bytes": 5943
     }
   },
   "presentation_update": "Placed static PC3 labels explicitly so all three remain visible; reused saved PCA coordinates. No fits, labels, selection, HTML, or CSV changed.",
-  "browser_rendering_verification": {
+  "original_all_task_html_sha256": "7dfc9b4cc86ee5707fbb3f67ab5b21ac5742e1dfe27470c6d00008100d62d4a9",
+  "original_all_task_browser_rendering_verification": {
     "status": "passed",
     "html_sha256": "7dfc9b4cc86ee5707fbb3f67ab5b21ac5742e1dfe27470c6d00008100d62d4a9",
     "maps": 3,
@@ -4057,5 +4058,28 @@
     "javascript_errors": 0,
     "qa_log_sha256": "a44a7665497451ac3e642bb2039bdd2c315935086484103503b4c75184f04963",
     "note": "Software rendering checks only; no new model or statistical tests."
+  },
+  "focused_presentation": {
+    "manifest": "results/pca_focused.json",
+    "figure": "results/pca_focused.png",
+    "pca_refits": 0,
+    "presentation_pipeline_sha256": "6c2ab568dc22050b5030aa99932e4cdd6e21d8ca9c47ca45e0cdec3b7261c952"
+  },
+  "browser_rendering_verification": {
+    "status": "passed",
+    "html_sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
+    "source_csv_sha256": "1e1fc1859a169b4e8ae38c54aad700f77e523984071f3565e9d5f635affea0cb",
+    "default_points": 723,
+    "all_accessible_points": 858,
+    "unchanged_coordinates_verified": 2574,
+    "fixed_triangles_under_all_policies": true,
+    "contract_triangle_hover_outcome": "C",
+    "solid_vs_faint_dashed_connectors": true,
+    "fixed_axes_and_equal_scaling": true,
+    "group_filters_and_zero_counts": true,
+    "external_requests": 0,
+    "javascript_errors": 0,
+    "qa_log_sha256": "0efd92c6b359473604506e03baf82edf05d2ffab054c78fc382ea0f8c70253d4",
+    "note": "Presentation checks only; no PCA fitting, state-cache access, scoring or statistical tests."
   }
 }

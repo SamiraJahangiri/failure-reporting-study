@@ -69,21 +69,31 @@ Complete, verified caches are reused. Publish the four compact report artifacts 
 
 ## Original-policy PCA visualization
 
-The [interactive 3D maps](results/pca.html) reuse the original baseline, transparency, and evidence-contract prompt-state caches. Download the HTML and open it locally; Plotly is embedded, so it works offline. This visualization uses no factorial inputs or supplied answer prefixes, and adds no generations, scoring, classifiers, interventions, or significance tests.
+The [interactive 3D maps](results/pca.html) reuse the original baseline, transparency, and evidence-contract PCA coordinates. Download the HTML and open it locally; Plotly is embedded, so it works offline. The main view shows only fixed W-W-C and C-C-C task groups. Either can be hidden; other sequences remain accessible separately. This presentation update reads the saved coordinates, without state-cache access, normalization, PCA refitting, generations, scoring, classifiers, interventions, or significance tests.
 
 Each task keeps its three original policies together. W is unsupported success **or** invented details, counted once; C means neither saved flag and does not guarantee complete correctness. Complete answers and both resolved labels are required under every policy. All observed outcome sequences remain available, including errors first appearing under transparency or contract. [Settings](config/pca.json) and the [report](results/pca.txt) list every exclusion and all eight sequence counts.
 
-| Model | Eligible tasks | Excluded tasks | Variance in three PCs |
-| --- | ---: | ---: | ---: |
-| Ministral | 97 | 3 | 55.68% |
-| Qwen | 95 | 5 | 55.74% |
-| Gemma | 94 | 6 | 56.98% |
+| Model | Eligible / excluded tasks | W-W-C tasks | C-C-C tasks | Variance in three PCs |
+| --- | ---: | ---: | ---: | ---: |
+| Ministral | 97 / 3 | 28 | 40 | 55.68% |
+| Qwen | 95 / 5 | 19 | 67 | 55.74% |
+| Gemma | 94 / 6 | 5 | 82 | 56.98% |
 
-One centered PCA per model uses all eligible pooled vectors from final blocks 34, 36, and 42, respectively. Vectors are individually L2-normalized; there is no whitening, coordinate scaling, control subtraction, or layer search. Colors identify policy, marker shapes identify W/C, and arrows link the same task from baseline to transparency and baseline to contract. Filters retain the same projection and fixed equal-unit axes. These are before-answer states: arrows represent instruction differences, not an answer unfolding in time. Projected separation or overlap does not establish a hallucination mechanism, and coordinates cannot be compared across model-specific maps.
+One centered PCA per model was fitted to all eligible pooled vectors from final blocks 34, 36, and 42, respectively. Vectors were individually L2-normalized; there was no whitening, coordinate scaling, control subtraction, or layer search. Those original projections, explained variances, and fixed equal-unit axes are unchanged.
 
-[Static all-points overview](results/pca.png) · [Coordinates and original flags](results/pca.csv) · [Source and cache manifest](results/pca.json)
+In the focused views, color identifies policy and shape identifies a **fixed task group**: triangles are W-W-C under every policy, including corrected contract points whose outcome is C. Circles are C-C-C, the always-clean reference group, not automatically matched controls. W-W-C arrows are solid and C-C-C arrows are faint dashed. Both connect the same task baseline→transparency and baseline→contract. No points are displaced. HTML triangles use centered triangle glyphs because Plotly's native 3D marker symbols do not include triangles; their hover anchors retain the exact saved coordinates.
 
-The existing internal-state pipeline provides a visualization-only command in the separate analysis environment; package versions are recorded in the manifest. Fitted projection arrays remain in an external cache so rendering changes reuse the same three PCA fits.
+These are before-answer states labeled by saved answers; arrows represent instruction differences, not an answer unfolding in time. Projected distances are approximate, and separation does not establish a cause of false reporting. Coordinates cannot be compared across model-specific maps.
+
+[Focused static figure](results/pca_focused.png) · [Preserved original all-task overview](results/pca.png) · [Unchanged coordinates and flags](results/pca.csv) · [Original fit manifest](results/pca.json) · [Presentation-only manifest](results/pca_focused.json)
+
+The presentation-only command needs saved compact outputs and the plotting packages, without activation caches or fitted projection arrays:
+
+```sh
+python3 -B -m pipelines.internal_states pca-focus
+```
+
+For reproducing the original three projections, the existing pipeline also provides the following cache-based command in the separate analysis environment; package versions are recorded in the original manifest. Fitted projection arrays remain external so rendering changes reuse the same three PCA fits.
 
 ```sh
 python3 -B -m pipelines.internal_states pca \
