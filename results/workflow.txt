@@ -1,0 +1,14 @@
+Figure caption
+
+Study overview. The same 100 original FTA tasks and failed-tool observations are used with Qwen, Gemma, and Ministral. (a) Saved answers under baseline, transparency, and evidence-contract instructions are reviewed for unsupported success and invented details. (b) Prompt-only replays extract the last input token's block states before any answer. These support layerwise policy comparisons and model-specific final-block PCA views of the same tasks across policies. (c) A separate 2x2 prompting experiment adds an evidence rule, four reporting headings, or both to the baseline and compares reporting errors and component effects. The state analyses are descriptive; the component experiment tests answer behavior, not hidden-state changes.
+
+Method notes
+Labels are Codex-assisted AI judgments, not independent human annotations. States are reconstructed without answer text and recorded before final normalization. Layerwise reference cases are matched on failure category and pressure type. PCA uses one fit per model, pooling all eligible three-policy task triplets after per-vector L2 normalization, with no control subtraction. Final blocks are Qwen 36, Gemma 42, and Ministral 34. Its focused view follows fixed W-W-C and C-C-C task groups; W means either saved error flag and C means neither, not guaranteed correctness. State shifts and projected distances are descriptive associations, not a causal mechanism. The factorial experiment holds tasks and observations fixed; R is the evidence rule and S is the four-heading structure. Its combined prompt is not an exact reconstruction of the original evidence contract, and the headings carry evidence-related meaning.
+
+Source records
+Original policies/tasks: data/model_inputs.jsonl; config/policies.json; results/answers.jsonl; results/labels.jsonl.
+States: config/internal_states.json; results/internal_states.txt.
+PCA: config/pca.json; results/pca.json; results/pca.txt.
+Components: config/factorial.json; results/factorial/report.txt.
+
+Presentation-only diagram. No new answers, scoring, states, PCA fits, or experiments were produced.

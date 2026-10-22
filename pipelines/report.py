@@ -6,6 +6,7 @@ Examples:
     python pipelines/report.py packets --output /path/outside-project/packets.jsonl
     python pipelines/report.py score --reviews /path/outside-project/reviews.jsonl
     python pipelines/report.py report
+    python pipelines/report.py workflow
 """
 from __future__ import annotations
 
@@ -194,6 +195,155 @@ def add_run_settings(root: Path, summary: dict, answers: list[dict]):
                    missing_model_rule="No checkpoint substitution. Models with no saved answer have no rate and are absent from the figure.")
 
 
+def workflow(root: Path):
+    """Draw a methods schematic only; never generate, rescore, or replay states."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+    ink, muted, line = "#182b45", "#53657a", "#b7c6d6"
+    blue, green, orange, purple = "#4c78a8", "#1b9e77", "#d49500", "#7560a5"
+    outputs = root / "results"
+    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 12,
+                         "svg.fonttype": "none"}):
+        fig, ax = plt.subplots(figsize=(12, 6.85))
+        ax.set(xlim=(0, 14), ylim=(0, 8))
+        ax.set_axis_off()
+        fig.subplots_adjust(left=.015, right=.985, bottom=.015, top=.985)
+
+        def text(x, y, value, size=12, color=ink, weight="normal", ha="center"):
+            return ax.text(x, y, value, fontsize=size, color=color,
+                           fontweight=weight, ha=ha, va="center", linespacing=1.4)
+
+        def box(x, y, w, h, face="white", edge=line, lw=1, radius=.12):
+            ax.add_patch(FancyBboxPatch((x, y), w, h,
+                boxstyle=f"round,pad=0,rounding_size={radius}",
+                facecolor=face, edgecolor=edge, linewidth=lw))
+
+        def arrow(start, end, color=muted):
+            ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>",
+                mutation_scale=12, color=color, linewidth=1.3,
+                shrinkA=2, shrinkB=2))
+
+        # The common input feeds independent analyses, not a live tool loop.
+        box(.25, 6.82, 13.5, .94, face="#f2f6fb", edge="#9bb0c8", lw=1.2)
+        text(7, 7.42, "100 unchanged FTA tasks + supplied failed-tool observations", 14, weight="bold")
+        text(7, 7.05, "FTA v0.3.0  ·  Qwen3-8B  ·  Gemma-2-9b-it  ·  Ministral 3 8B  ·  Native chat templates", 10.5, muted)
+        panels = [( .25, blue, "#f4f7fc", "(a) Reporting behavior"),
+                  (4.85, green, "#f2f9f7", "(b) Internal-state analysis"),
+                  (9.45, purple, "#f7f5fb", "(c) Prompt components")]
+        for x, color, face, title in panels:
+            box(x, .23, 4.3, 6.05, face, edge="#d0dbe5", lw=1)
+            text(x+.24, 5.94, title, 13, color, "bold", ha="left")
+            arrow((x+2.15, 6.82), (x+2.15, 6.3), color)
+
+        # A: unchanged original policies, reports, and existing outcome labels.
+        x, c = .25, 2.4
+        text(c, 5.43, "Original instruction policies", 11.5, weight="bold")
+        for y, label, color in [(4.67, "Baseline", blue),
+                                (3.99, "Transparency", green),
+                                (3.31, "Evidence contract", orange)]:
+            box(x+.42, y, 3.46, .52, edge=color, lw=1.2)
+            text(c, y+.26, label, 12, color)
+        arrow((c, 3.31), (c, 2.91))
+        box(x+.42, 2.25, 3.46, .64)
+        text(c, 2.57, "Model answers", 12, weight="bold")
+        arrow((c, 2.25), (c, 1.91))
+        text(c, 1.68, "Codex-assisted rubric review", 11, muted)
+        box(x+.42, .91, 3.46, .48, "#fff4f3", "#dfb5b0")
+        text(c, 1.15, "Unsupported success", 11.5, "#a34840")
+        box(x+.42, .34, 3.46, .48, "#fff8ea", "#dcc48c")
+        text(c, .58, "Invented details", 11.5, "#916214")
+
+        # B: prompt-only reconstructed states, with two analyses of that cache.
+        x, c = 4.85, 7
+        box(x+.42, 4.48, 3.46, .93)
+        text(c, 5.08, "Replay each original input", 11.5, weight="bold")
+        text(c, 4.74, "Before any answer token", 11, muted)
+        arrow((c, 4.48), (c, 4.09))
+        box(x+.42, 3.15, 3.46, .92, "#e9f5f0", "#90bcae")
+        text(c, 3.81, "Last input token", 12, weight="bold")
+        text(c, 3.5, "Every transformer block", 10.5, muted)
+        text(c, 3.26, "Before final normalization", 9.5, muted)
+        ax.plot([x+.58, x+.58], [3.15, 1.08], color=green, lw=1.2)
+        box(x+.91, 1.91, 2.97, .92)
+        text(x+2.395, 2.51, "Layerwise policy shifts", 11.5, weight="bold")
+        text(x+2.395, 2.17, "Matched clean references", 10.5, muted)
+        arrow((x+.58, 2.37), (x+.91, 2.37), green)
+        box(x+.91, .55, 2.97, 1.06)
+        text(x+2.395, 1.31, "Final-block PCA", 12, weight="bold")
+        text(x+2.395, .96, "L2 normalization · PCA per model", 9.5, muted)
+        text(x+2.395, .7, "Same tasks across three policies", 9.5, muted)
+        arrow((x+.58, 1.08), (x+.91, 1.08), green)
+
+        # C: a separate new 2x2 prompting experiment, not a state intervention.
+        x, c = 9.45, 11.6
+        text(c, 5.43, "2 × 2 prompting experiment", 11.5, weight="bold")
+        text(c, 5.03, "B = original baseline", 10.5, muted)
+        gx, gy, cw, ch = x+1.13, 3.09, 1.34, .61
+        text(gx+cw/2, 4.59, "R off", 11, muted)
+        text(gx+1.5*cw, 4.59, "R on", 11, muted)
+        for row, label in enumerate(("S off", "S on")):
+            y = gy+(1-row)*ch
+            text(x+.62, y+ch/2, label, 11, muted)
+            for col in range(2):
+                box(gx+col*cw, y, cw, ch, "white", "#b7accb", radius=.025)
+                text(gx+(col+.5)*cw, y+ch/2,
+                     (("B", "B + R"), ("B + S", "B + R + S"))[row][col],
+                     12, purple, "bold")
+        text(c, 2.72, "R  Evidence rule", 11, weight="bold")
+        text(c, 2.3, "S  Four reporting headings", 11, weight="bold")
+        text(c, 1.87, "STATUS · EVIDENCE\nLIMITATION · NEXT_ACTION", 9.5, muted)
+        arrow((c, 1.5), (c, 1.18))
+        box(x+.42, .42, 3.46, .74, "white", "#b7accb")
+        text(c, .92, "Reporting-error rates", 12, weight="bold")
+        text(c, .61, "Rule effect · structure effect · interaction", 9.5, muted)
+
+        for ext in ("svg", "png"):
+            fig.savefig(outputs / f"workflow.{ext}", dpi=300, facecolor="white")
+        plt.close(fig)
+
+    (outputs / "workflow.txt").write_text(
+        "Figure caption\n\n"
+        "Study overview. The same 100 original FTA tasks and failed-tool "
+        "observations are used with Qwen, Gemma, and Ministral. (a) Saved answers "
+        "under baseline, transparency, and evidence-contract instructions are "
+        "reviewed for unsupported success and invented details. (b) Prompt-only "
+        "replays extract the last input token's block states before any answer. "
+        "These support layerwise policy comparisons and model-specific "
+        "final-block PCA views of the same tasks across policies. (c) A separate "
+        "2x2 prompting experiment adds an evidence rule, four reporting headings, "
+        "or both to the baseline and compares reporting errors and component "
+        "effects. The state analyses are descriptive; the component experiment "
+        "tests answer behavior, not hidden-state changes.\n\n"
+        "Method notes\n"
+        "Labels are Codex-assisted AI judgments, not independent human "
+        "annotations. States are reconstructed without answer text and recorded "
+        "before final normalization. Layerwise reference cases "
+        "are matched on failure category and pressure type. PCA uses one fit per "
+        "model, pooling all eligible three-policy task triplets after per-vector "
+        "L2 normalization, with no control subtraction. Final blocks are Qwen 36, "
+        "Gemma 42, and Ministral 34. Its focused view follows fixed W-W-C and C-C-C "
+        "task groups; W means either saved error flag and C means neither, not "
+        "guaranteed correctness. State shifts and projected distances are "
+        "descriptive associations, not a causal mechanism. The factorial "
+        "experiment holds tasks and observations fixed; R is the evidence rule "
+        "and S is the four-heading structure. Its combined prompt is not an exact "
+        "reconstruction of the original evidence contract, and the headings "
+        "carry evidence-related meaning.\n\n"
+        "Source records\n"
+        "Original policies/tasks: data/model_inputs.jsonl; config/policies.json; "
+        "results/answers.jsonl; results/labels.jsonl.\n"
+        "States: config/internal_states.json; results/internal_states.txt.\n"
+        "PCA: config/pca.json; results/pca.json; results/pca.txt.\n"
+        "Components: config/factorial.json; results/factorial/report.txt.\n\n"
+        "Presentation-only diagram. No new answers, scoring, states, PCA fits, "
+        "or experiments were produced.\n", encoding="utf-8")
+    return {"diagram": "results/workflow.png", "editable_vector": "results/workflow.svg",
+            "caption": "results/workflow.txt", "new_experiments": 0}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -202,8 +352,11 @@ def main():
     packets = commands.add_parser("packets"); packets.add_argument("--output", type=Path, required=True)
     imported = commands.add_parser("score"); imported.add_argument("--reviews", type=Path, required=True)
     commands.add_parser("report")
+    commands.add_parser("workflow", help="Render the paper's study overview only")
     args = parser.parse_args()
     root, results = args.root.resolve(), args.root.resolve() / "results"
+    if args.command == "workflow":
+        print(json.dumps(workflow(root))); return
     load_and_verify_inputs(root)
     if args.command == "reuse":
         source = args.source.resolve() if args.source else results / "preserved_exact"
