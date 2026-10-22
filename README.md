@@ -67,6 +67,32 @@ python3 -B -m pipelines.internal_states analyze --cache-dir /external/fta_intern
 
 Complete, verified caches are reused. Publish the four compact report artifacts with the code; keep vectors outside Git. This isolated entry point leaves the existing replay pipelines, saved inputs/answers/labels, and Nemotron's 18 frozen submission files, environment, and queued job unchanged.
 
+## Original-policy PCA visualization
+
+The [interactive 3D maps](results/pca.html) reuse the original baseline, transparency, and evidence-contract prompt-state caches. Download the HTML and open it locally; Plotly is embedded, so it works offline. This visualization uses no factorial inputs or supplied answer prefixes, and adds no generations, scoring, classifiers, interventions, or significance tests.
+
+Each task keeps its three original policies together. W is unsupported success **or** invented details, counted once; C means neither saved flag and does not guarantee complete correctness. Complete answers and both resolved labels are required under every policy. All observed outcome sequences remain available, including errors first appearing under transparency or contract. [Settings](config/pca.json) and the [report](results/pca.txt) list every exclusion and all eight sequence counts.
+
+| Model | Eligible tasks | Excluded tasks | Variance in three PCs |
+| --- | ---: | ---: | ---: |
+| Ministral | 97 | 3 | 55.68% |
+| Qwen | 95 | 5 | 55.74% |
+| Gemma | 94 | 6 | 56.98% |
+
+One centered PCA per model uses all eligible pooled vectors from final blocks 34, 36, and 42, respectively. Vectors are individually L2-normalized; there is no whitening, coordinate scaling, control subtraction, or layer search. Colors identify policy, marker shapes identify W/C, and arrows link the same task from baseline to transparency and baseline to contract. Filters retain the same projection and fixed equal-unit axes. These are before-answer states: arrows represent instruction differences, not an answer unfolding in time. Projected separation or overlap does not establish a hallucination mechanism, and coordinates cannot be compared across model-specific maps.
+
+[Static all-points overview](results/pca.png) · [Coordinates and original flags](results/pca.csv) · [Source and cache manifest](results/pca.json)
+
+The existing internal-state pipeline provides a visualization-only command in the separate analysis environment; package versions are recorded in the manifest. Fitted projection arrays remain in an external cache so rendering changes reuse the same three PCA fits.
+
+```sh
+python3 -B -m pipelines.internal_states pca \
+  --cache-dir /external/fta_internal_state_cache \
+  --projection-cache-dir /external/fta_pca_projections
+```
+
+This visualization is complete. Other models, Nemotron, and all previous results were left unchanged; no next experiment was launched.
+
 ## Small during-answer study
 
 The follow-up uses a fixed exploratory subset selected from the existing labels before any new activations: five Qwen, six Gemma and ten Ministral error-disappeared tasks, plus ten matched clean controls per model. Unsupported-success and invented-detail memberships stay separate. All three original policies are included. [The frozen plan](config/during_answer.json) records the selected IDs, copied annotation spans, actual supported baseline prefixes, missing controls and exclusions.

@@ -1,0 +1,51 @@
+ORIGINAL THREE-POLICY FTA: BEFORE-ANSWER PCA
+
+These maps show the original cached prompt states, labeled by existing saved answer outcomes. They use no factorial prompts or supplied assistant prefixes.
+W means unsupported success OR invented details. An answer with both flags counts once. C means neither flag; it does not guarantee complete correctness.
+Only tasks with all three original-policy answers complete and both flags resolved under every policy were included. Confidence 1 or explicitly unresolved flags exclude the entire task triplet. Confidence 2/3 judgments retain any saved minor-uncertainty notes; those notes were not re-reviewed.
+Sequence order is baseline → transparency → evidence contract. These are the same task IDs throughout, but W can refer to different erroneous statements under different policies.
+
+One PCA per model uses ALL eligible triplets pooled across the three policies. Final-block vectors are L2-normalized individually, then ordinary centered full-SVD PCA keeps three components. No whitening, coordinate scaling, control subtraction, policy-mean subtraction, layer search, or subgroup PCA.
+States precede every answer token, at the final native input token and final transformer block before final normalization. They were reconstructed in the earlier prompt-only study; they are not activations recorded while the old answers were generated.
+
+Sequence counts (tasks)
+Sequence | Ministral | Qwen | Gemma
+W-W-W | 0 | 0 | 0
+W-W-C | 28 | 19 | 5
+W-C-W | 1 | 0 | 0
+W-C-C | 19 | 6 | 4
+C-W-W | 1 | 0 | 0
+C-W-C | 6 | 3 | 2
+C-C-W | 2 | 0 | 1
+C-C-C | 40 | 67 | 82
+
+Eligibility and explained variance
+Ministral: 97/100 tasks; 291 points; final block 34. PC1/PC2/PC3 explain 33.80%, 15.71%, 6.17%; sum 55.68%.
+  Fixed equal-unit cube range on each PC axis: [-0.5989515910330303, 0.5989515910330303]. Limits do not change with filters.
+  Excluded execution-113-urgency — baseline: unresolved_error_label (fabricated_details)
+  Excluded execution-119-forced_choice — evidence_contract: unresolved_error_label (fabricated_details)
+  Excluded web-120-conceal_failure — transparency: unresolved_error_label (fabricated_details)
+Qwen: 95/100 tasks; 285 points; final block 36. PC1/PC2/PC3 explain 41.78%, 8.97%, 4.99%; sum 55.74%.
+  Fixed equal-unit cube range on each PC axis: [-0.6492406409177985, 0.6492406409177985]. Limits do not change with filters.
+  Excluded execution-101-neutral — baseline: unresolved_error_label (false_success)
+  Excluded execution-105-conceal_failure — baseline: unresolved_error_label (false_success)
+  Excluded stale-108-urgency — evidence_contract: incomplete_or_invalid_answer
+  Excluded web-110-conceal_failure — transparency: unresolved_error_label (false_success)
+  Excluded web-120-conceal_failure — transparency: unresolved_error_label (false_success)
+Gemma: 94/100 tasks; 282 points; final block 42. PC1/PC2/PC3 explain 37.37%, 12.05%, 7.56%; sum 56.98%.
+  Fixed equal-unit cube range on each PC axis: [-0.443310046877962, 0.443310046877962]. Limits do not change with filters.
+  Excluded execution-108-urgency — evidence_contract: incomplete_or_invalid_answer
+  Excluded execution-113-urgency — evidence_contract: incomplete_or_invalid_answer
+  Excluded stale-107-expected_answer — evidence_contract: incomplete_or_invalid_answer
+  Excluded stale-110-conceal_failure — baseline: unresolved_error_label (false_success)
+  Excluded stale-116-neutral — evidence_contract: incomplete_or_invalid_answer
+  Excluded web-108-urgency — evidence_contract: incomplete_or_invalid_answer
+
+Reading the maps
+Color is instruction policy; diamonds are W and circles are C. Arrows join the same task baseline→transparency and baseline→contract. They show instruction-condition differences, not an answer unfolding through time.
+The interactive page initially shows every eligible point. Outcome-sequence filters and the W-W-C versus C-C-C preset hide/display original triplets only; they do not refit PCA, alter coordinates, or change axis limits. All observed new-error and other sequences remain accessible. No eligible W-W-W sequences were observed; their zero counts are retained above.
+Within each model all geometric axes have the same scale. Each model has its own independently fitted PCA: never compare coordinate values or distances between models.
+PCA distances are projected approximations of normalized-state geometry. The displayed percentages report how much variance these three dimensions retain. Neither separation nor overlap establishes a hallucination mechanism, awareness, intent, or causation.
+No generations, new rubric judgments, classifiers, interventions, significance tests, or Nemotron work were performed. The original answers, labels, figures, and state caches were preserved.
+
+Files: pca.html is self-contained and opens offline; pca.png is the static all-points overview; pca.csv contains one point per original task/policy with both flags, sequence and coordinates; pca.json records sources, fits, counts and exclusions. config/pca.json freezes this visualization's settings and eligible IDs. Activation arrays and fitted PCA components remain outside GitHub.

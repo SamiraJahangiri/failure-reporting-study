@@ -3,6 +3,7 @@
 Prompt-only extraction has no answer tokens or generation. The separate small
  during-answer study teacher-forces saved tokens and generates one new tail per
  supported shared prefix. Heavy vectors stay outside the project; no interventions.
+The PCA command only visualizes existing original-run prompt-state caches.
 """
 from __future__ import annotations
 
@@ -2372,6 +2373,400 @@ def during_packets(root, plan_path, cache_dir, output, model_name):
     return packets
 
 
+PCA_POLICIES = ("baseline", "transparency", "evidence_contract")
+PCA_MODELS = ("ministral3_8b", "qwen3_8b", "gemma2_9b")
+PCA_SEQUENCES = ("W-W-W", "W-W-C", "W-C-W", "W-C-C", "C-W-W", "C-W-C", "C-C-W", "C-C-C")
+
+
+def pca_triplets(sources, scenarios):
+    """Join all three original policies; use saved label resolution only."""
+    selected, exclusions, counts = {}, {}, {}
+    for key in PCA_MODELS:
+        model = sources["configuration"]["models"][key]["repo_id"]
+        rows, missing = [], []
+        for task_id in sorted(scenarios):
+            endpoints, reasons = [], []
+            for policy in PCA_POLICIES:
+                answer, answer_line = sources["answers"][(model, task_id, policy)]
+                label, label_line = sources["labels"][answer["response_id"]]
+                if not _state_valid(answer):
+                    reasons.append({"policy": policy, "reason": "incomplete_or_invalid_answer",
+                        "truncated": bool(answer.get("truncated")), "finish_reason": answer.get("finish_reason"),
+                        "answer_source": "results/answers.jsonl:" + str(answer_line)})
+                for flag in STATE_METRICS[:2]:
+                    if not _state_known(label, flag):
+                        reasons.append({"policy": policy, "reason": "unresolved_error_label", "flag": flag,
+                            "confidence": label.get("confidence", {}).get(flag),
+                            "label_source": "results/labels.jsonl:" + str(label_line)})
+                endpoints.append((policy, answer, label, answer_line, label_line))
+            if reasons:
+                missing.append({"task_id": task_id, "reasons": reasons})
+                continue
+            outcomes = ["W" if any(label["rubric_labels"][f] for f in STATE_METRICS[:2]) else "C"
+                        for _, _, label, _, _ in endpoints]
+            sequence = "-".join(outcomes)
+            for outcome, (policy, answer, label, answer_line, label_line) in zip(outcomes, endpoints):
+                rows.append({"model_key": key, "model": model, "task_id": task_id, "policy": policy,
+                    "response_id": answer["response_id"], "revision": answer["revision"],
+                    "outcome": outcome, "sequence": sequence,
+                    "failure_category": scenarios[task_id]["category"],
+                    "pressure_type": scenarios[task_id]["pressure_type"],
+                    "false_success": label["rubric_labels"]["false_success"],
+                    "fabricated_details": label["rubric_labels"]["fabricated_details"],
+                    "false_success_confidence": label["confidence"]["false_success"],
+                    "fabricated_details_confidence": label["confidence"]["fabricated_details"],
+                    "false_success_uncertainty_note": label.get("uncertainty", {}).get("false_success", {}),
+                    "fabricated_details_uncertainty_note": label.get("uncertainty", {}).get("fabricated_details", {}),
+                    "input_token_count": answer["input_length"],
+                    "answer_source": "results/answers.jsonl:" + str(answer_line),
+                    "label_source": "results/labels.jsonl:" + str(label_line)})
+        task_sequences = {r["task_id"]: r["sequence"] for r in rows}
+        selected[key], exclusions[key] = rows, missing
+        counts[key] = {s: sum(value == s for value in task_sequences.values()) for s in PCA_SEQUENCES}
+        if len(task_sequences) + len(missing) != 100 or len(rows) != 3 * len(task_sequences):
+            raise ValueError("PCA eligibility must partition all 100 original task triplets")
+    return selected, exclusions, counts
+
+
+def pca_fit_final_vectors(vectors):
+    """The only PCA fit: L2 rows, ordinary centered full SVD, three PCs."""
+    import numpy as np
+    from sklearn.decomposition import PCA
+    from threadpoolctl import threadpool_limits
+
+    values = np.asarray(vectors, dtype=np.float64)
+    norms = np.linalg.norm(values, axis=1)
+    if values.ndim != 2 or not np.isfinite(values).all() or np.any(norms <= 1e-12):
+        raise ValueError("PCA needs finite nonzero final-block prompt vectors")
+    normalized = values / norms[:, None]
+    with threadpool_limits(limits=1):
+        pca = PCA(n_components=3, svd_solver="full", whiten=False)
+        coordinates = pca.fit_transform(normalized)
+    if not np.allclose(coordinates, (normalized-pca.mean_) @ pca.components_.T, rtol=1e-10, atol=1e-12):
+        raise ValueError("PCA coordinates do not match the single pooled centered projection")
+    return {"coordinates": coordinates, "components": pca.components_, "mean": pca.mean_,
+            "explained_variance_ratio": pca.explained_variance_ratio_,
+            "explained_variance": pca.explained_variance_, "singular_values": pca.singular_values_}
+
+
+def pca_project_cached(vectors, method, directory, model_key):
+    """Keep fitted components externally so presentation edits never refit PCA."""
+    directory = Path(directory).expanduser().resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    data_path = directory / (model_key + ".pca.npz")
+    meta_path = directory / (model_key + ".pca.json")
+    signature = digest(method)
+    if meta_path.exists():
+        metadata = read_json(meta_path)
+        if metadata["method_sha256"] != signature or sha256_file(data_path) != metadata["data_sha256"]:
+            raise ValueError("Existing PCA projection differs; preserve it instead of fitting again")
+        with np.load(data_path, allow_pickle=False) as archive:
+            projected = {name: archive[name].copy() for name in archive.files}
+        return projected, metadata, False
+    if data_path.exists():
+        raise FileExistsError("Unsigned PCA projection exists; preserve it rather than refit")
+    projected = pca_fit_final_vectors(vectors)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=directory, delete=False) as handle:
+            temporary = Path(handle.name)
+            np.savez_compressed(handle, **projected)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(temporary, data_path)
+    finally:
+        if temporary:
+            temporary.unlink(missing_ok=True)
+    metadata = {"method": method, "method_sha256": signature,
+                "data_sha256": sha256_file(data_path), "pca_fits": 1,
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    atomic_write_json(meta_path, metadata, overwrite=False)
+    return projected, metadata, True
+
+
+def pca_static_figure(payload, output):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    colors = {"baseline": "#4c78a8", "transparency": "#1b9e77", "evidence_contract": "#e69f00"}
+    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 9}):
+        figure = plt.figure(figsize=(15, 5.2))
+        for index, model in enumerate(payload["models"]):
+            ax = figure.add_subplot(1, 3, index+1, projection="3d")
+            tasks = {}
+            for point in model["points"]:
+                tasks.setdefault(point["task_id"], {})[point["policy"]] = point
+            for task in tasks.values():
+                a = task["baseline"]
+                for policy in PCA_POLICIES[1:]:
+                    b = task[policy]
+                    ax.quiver(a["pc1"], a["pc2"], a["pc3"], b["pc1"]-a["pc1"],
+                        b["pc2"]-a["pc2"], b["pc3"]-a["pc3"], color=colors[policy],
+                        alpha=.12, linewidth=.35, arrow_length_ratio=.04)
+            for policy in PCA_POLICIES:
+                for outcome, marker in (("C", "o"), ("W", "D")):
+                    points = [p for p in model["points"] if p["policy"] == policy and p["outcome"] == outcome]
+                    ax.scatter([p["pc1"] for p in points], [p["pc2"] for p in points],
+                        [p["pc3"] for p in points], marker=marker, s=15, alpha=.72,
+                        color=colors[policy], linewidths=.2, edgecolors="white", depthshade=False)
+            labels = [f"PC{i+1} ({100*v:.1f}%)" for i, v in enumerate(model["explained_variance_ratio"])]
+            ax.set(xlabel=labels[0], ylabel=labels[1], zlabel="",
+                   xlim=model["axis_range"], ylim=model["axis_range"], zlim=model["axis_range"])
+            ax.set_box_aspect((1, 1, 1))
+            ax.view_init(elev=22, azim=40)
+            ax.tick_params(labelsize=7, pad=0)
+            ax.set_title(model["name"] + f" · 3 PCs: {100*sum(model['explained_variance_ratio']):.1f}%", fontsize=12, pad=8)
+        handles = [Line2D([], [], marker="o", ls="", color=color, label=policy.replace("_", " ").capitalize())
+                   for policy, color in colors.items()]
+        handles += [Line2D([], [], marker="D", ls="", color="#4b5563", label="W: either error"),
+                    Line2D([], [], marker="o", ls="", color="#4b5563", label="C: neither flag")]
+        figure.legend(handles=handles, loc="upper center", ncol=5, frameon=False, fontsize=10, bbox_to_anchor=(.5, .99))
+        figure.subplots_adjust(left=.06, right=.97, bottom=.08, top=.83, wspace=.24)
+        for ax, model in zip(figure.axes, payload["models"]):
+            position = ax.get_position()
+            figure.text(position.x0-.035, (position.y0+position.y1)/2,
+                f"PC3 ({100*model['explained_variance_ratio'][2]:.1f}%)",
+                rotation=90, va="center", ha="center", fontsize=9)
+        figure.savefig(output, dpi=190, bbox_inches="tight", facecolor="white")
+        plt.close(figure)
+
+
+def pca_plain_report(payload, manifest, output):
+    lines = ["ORIGINAL THREE-POLICY FTA: BEFORE-ANSWER PCA", "",
+        "These maps show the original cached prompt states, labeled by existing saved answer outcomes. They use no factorial prompts or supplied assistant prefixes.",
+        "W means unsupported success OR invented details. An answer with both flags counts once. C means neither flag; it does not guarantee complete correctness.",
+        "Only tasks with all three original-policy answers complete and both flags resolved under every policy were included. Confidence 1 or explicitly unresolved flags exclude the entire task triplet. Confidence 2/3 judgments retain any saved minor-uncertainty notes; those notes were not re-reviewed.",
+        "Sequence order is baseline → transparency → evidence contract. These are the same task IDs throughout, but W can refer to different erroneous statements under different policies.", "",
+        "One PCA per model uses ALL eligible triplets pooled across the three policies. Final-block vectors are L2-normalized individually, then ordinary centered full-SVD PCA keeps three components. No whitening, coordinate scaling, control subtraction, policy-mean subtraction, layer search, or subgroup PCA.",
+        "States precede every answer token, at the final native input token and final transformer block before final normalization. They were reconstructed in the earlier prompt-only study; they are not activations recorded while the old answers were generated.", "",
+        "Sequence counts (tasks)", "Sequence | " + " | ".join(m["name"] for m in payload["models"])]
+    for sequence in PCA_SEQUENCES:
+        lines.append(sequence + " | " + " | ".join(str(m["sequence_counts"][sequence]) for m in payload["models"]))
+    lines += ["", "Eligibility and explained variance"]
+    for model in payload["models"]:
+        ratios = model["explained_variance_ratio"]
+        lines.append(f"{model['name']}: {len(model['points'])//3}/100 tasks; {len(model['points'])} points; final block {model['final_block']}. PC1/PC2/PC3 explain " +
+            ", ".join(f"{100*v:.2f}%" for v in ratios) + f"; sum {100*sum(ratios):.2f}%.")
+        lines.append(f"  Fixed equal-unit cube range on each PC axis: {model['axis_range']}. Limits do not change with filters.")
+        for excluded in manifest["exclusions"][model["id"]]:
+            reasons = "; ".join(r["policy"] + ": " + r["reason"] + (" (" + r["flag"] + ")" if "flag" in r else "") for r in excluded["reasons"])
+            lines.append("  Excluded " + excluded["task_id"] + " — " + reasons)
+    lines += ["", "Reading the maps",
+        "Color is instruction policy; diamonds are W and circles are C. Arrows join the same task baseline→transparency and baseline→contract. They show instruction-condition differences, not an answer unfolding through time.",
+        "The interactive page initially shows every eligible point. Outcome-sequence filters and the W-W-C versus C-C-C preset hide/display original triplets only; they do not refit PCA, alter coordinates, or change axis limits. All observed new-error and other sequences remain accessible. No eligible W-W-W sequences were observed; their zero counts are retained above.",
+        "Within each model all geometric axes have the same scale. Each model has its own independently fitted PCA: never compare coordinate values or distances between models.",
+        "PCA distances are projected approximations of normalized-state geometry. The displayed percentages report how much variance these three dimensions retain. Neither separation nor overlap establishes a hallucination mechanism, awareness, intent, or causation.",
+        "No generations, new rubric judgments, classifiers, interventions, significance tests, or Nemotron work were performed. The original answers, labels, figures, and state caches were preserved.", "",
+        "Files: pca.html is self-contained and opens offline; pca.png is the static all-points overview; pca.csv contains one point per original task/policy with both flags, sequence and coordinates; pca.json records sources, fits, counts and exclusions. config/pca.json freezes this visualization's settings and eligible IDs. Activation arrays and fitted PCA components remain outside GitHub."]
+    Path(output).write_text("\n".join(lines)+"\n", encoding="utf-8")
+
+
+def pca_visualize(root, cache_dir, projection_cache_dir, output_prefix):
+    """Original-run visualization only: cached final states, fixed pooled PCA."""
+    from utils.dataset import load_scenarios
+
+    root, cache_dir = Path(root).resolve(), Path(cache_dir).expanduser().resolve()
+    projection_cache_dir = Path(projection_cache_dir).expanduser().resolve()
+    output_prefix = Path(output_prefix).resolve()
+    if root == projection_cache_dir or root in projection_cache_dir.parents:
+        raise ValueError("Fitted PCA arrays must remain outside the project")
+    if root not in output_prefix.parents:
+        raise ValueError("Compact PCA outputs must be inside this project")
+    sources = state_read_frozen_sources(root, STATE_MODELS, STATE_PAIRS, STATE_METRICS, STATE_SEED, STATE_BOOTSTRAPS)
+    scenarios = load_scenarios(root)
+    selected, exclusions, counts = pca_triplets(sources, scenarios)
+    preserved = {str(p.relative_to(root)): sha256_file(p) for p in (root/"results").rglob("*") if p.is_file()
+                 and p.suffix in (".json", ".jsonl", ".csv", ".txt", ".png", ".html")
+                 and p.stem != output_prefix.name}
+    fit_packages = {name: importlib.metadata.version(name) for name in ("numpy", "scipy", "scikit-learn")}
+    settings = {"phase": "original_three_policy_prompt_state_PCA_visualization_only", "policy_order": list(PCA_POLICIES),
+        "model_order": list(PCA_MODELS), "flags": list(STATE_METRICS[:2]),
+        "eligibility": "Complete EOS triplet; both error flags confidence2/3 and not explicitly unresolved under every policy",
+        "W": "false_success OR fabricated_details", "C": "Neither saved flag; not a guarantee of complete correctness",
+        "selection": "All eligible original task triplets, independent of outcome sequence or prior matching",
+        "state": "Cached final transformer-block output at final input token before final normalization; no answer tokens",
+        "expected_final_blocks": {"ministral3_8b": 34, "qwen3_8b": 36, "gemma2_9b": 42},
+        "PCA": {"normalize": "individual vector L2, float64", "center": True, "components": 3,
+            "svd_solver": "full", "whiten": False, "coordinate_scaling": False, "pool": "all eligible tasks x all three policies per model",
+            "control_or_policy_mean_subtraction": False},
+        "fit_function_sha256": digest(inspect.getsource(pca_fit_final_vectors)), "fit_packages": fit_packages,
+        "source_provenance": sources["provenance"],
+        "task_ids": {key: sorted({r["task_id"] for r in rows}) for key, rows in selected.items()},
+        "sequence_counts": counts, "exclusions": exclusions,
+        "new_generations": 0, "new_scoring": 0, "classifiers": False, "interventions": False,
+        "significance_tests": False, "Nemotron_touched": False, "stop_after_visualization": True}
+    plan_path = root/"config/pca.json"
+    if plan_path.exists():
+        if read_json(plan_path) != settings:
+            raise ValueError("Frozen PCA inputs/settings differ; preserve previous visualization")
+    else:
+        atomic_write_json(plan_path, settings, overwrite=False)
+    payload, fit_metadata, new_fits = {"models": []}, {}, 0
+    names = {"ministral3_8b": "Ministral", "qwen3_8b": "Qwen", "gemma2_9b": "Gemma"}
+    table = []
+    for key in PCA_MODELS:
+        validated = state_validate_cache(root, cache_dir, key, sources,
+            (extraction_reference, verify_extraction_inputs, extraction_gpu, verify_complete_cache, extract), EXTRACTION_VERSION)
+        positions = {(str(task), str(policy)): i for i, (task, policy) in enumerate(zip(validated["scenario_ids"], validated["conditions"]))}
+        records = selected[key]
+        block = validated["states"].shape[1]
+        if block != settings["expected_final_blocks"][key]:
+            raise ValueError("Unexpected final transformer block")
+        indices = [positions[(r["task_id"], r["policy"])] for r in records]
+        vectors = validated["states"][indices, -1, :].astype(np.float64)
+        method = {"settings": settings["PCA"], "function_sha256": settings["fit_function_sha256"],
+            "packages": fit_packages, "model": key, "revision": records[0]["revision"], "final_block": block,
+            "state_file_sha256": validated["provenance"]["validated_files"]["states"]["sha256"],
+            "ordered_input_ids": [[r["task_id"], r["policy"]] for r in records],
+            "selected_vectors_sha256": hashlib.sha256(vectors.tobytes()).hexdigest()}
+        projected, metadata, fitted = pca_project_cached(vectors, method, projection_cache_dir, key)
+        new_fits += int(fitted)
+        coordinates = projected["coordinates"]
+        if coordinates.shape != (len(records), 3) or not np.isfinite(coordinates).all():
+            raise ValueError("PCA coordinate coverage differs from complete triplets")
+        radius = float(np.max(np.abs(coordinates)) * 1.08)
+        points = []
+        for record, xyz, position in zip(records, coordinates, indices):
+            point = dict(record, pc1=float(xyz[0]), pc2=float(xyz[1]), pc3=float(xyz[2]))
+            points.append(point)
+            table.append({k: v for k, v in dict(point, final_block=block, native_input_index=position).items()
+                          if not k.endswith("_uncertainty_note")})
+        payload["models"].append({"id": key, "name": names[key], "model": records[0]["model"],
+            "points": points, "axis_range": [-radius, radius], "final_block": block,
+            "explained_variance_ratio": projected["explained_variance_ratio"].tolist(), "sequence_counts": counts[key]})
+        fit_metadata[key] = {"projection": metadata, "cache_validation": validated["provenance"],
+            "axis_range": [-radius, radius], "explained_variance_ratio": projected["explained_variance_ratio"].tolist(),
+            "explained_variance_sum": float(projected["explained_variance_ratio"].sum()),
+            "eligible_tasks": len(records)//3, "points": len(records), "final_block": block,
+            "reconstructed_not_historical_activation_capture": True}
+        del validated, vectors
+    output_prefix.parent.mkdir(parents=True, exist_ok=True)
+    paths = {ext: output_prefix.with_suffix("."+ext) for ext in ("html", "png", "csv", "txt", "json")}
+    with paths["csv"].open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(table[0]), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(table)
+    distribution = importlib.metadata.distribution("plotly")
+    js_path = Path(distribution.locate_file("plotly/package_data/plotly.min.js"))
+    plotly_js = js_path.read_text()
+    render_pca_html(payload, plotly_js, paths["html"])
+    pca_static_figure(payload, paths["png"])
+    manifest = {"phase": settings["phase"], "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "plan": "config/pca.json", "plan_sha256": sha256_file(plan_path),
+        "pipeline_sha256": sha256_file(Path(__file__)), "source_provenance": sources["provenance"],
+        "models": fit_metadata, "sequence_counts": counts, "exclusions": exclusions,
+        "plotly_python_package": distribution.version, "bundled_plotly_js_sha256": sha256_file(js_path),
+        "matplotlib_version": importlib.metadata.version("matplotlib"), "python_version": platform.python_version(),
+        "total_pca_fits": 3, "pca_fits_this_invocation": new_fits,
+        "new_model_forwards": 0, "new_answers": 0, "new_scoring": 0, "classifiers": False,
+        "interventions": False, "significance_tests": False, "Nemotron_touched": False,
+        "before_answer_states": True, "arrows": ["baseline→transparency", "baseline→evidence_contract"],
+        "fixed_projection_and_axis_limits_under_filters": True, "stop_after_visualization": True}
+    pca_plain_report(payload, manifest, paths["txt"])
+    for relative, expected in preserved.items():
+        if sha256_file(root/relative) != expected:
+            raise ValueError("A preserved result changed during PCA visualization: " + relative)
+    manifest["preserved_results_verified"] = preserved
+    manifest["outputs"] = {ext: {"file": str(path.relative_to(root)), "sha256": sha256_file(path), "bytes": path.stat().st_size}
+                           for ext, path in paths.items() if ext != "json"}
+    atomic_write_json(paths["json"], manifest)
+    return {"phase": settings["phase"], "points": len(table), "new_pca_fits": new_fits,
+            "sequence_counts": counts, "explained_variance_sums": {k: m["explained_variance_sum"] for k, m in fit_metadata.items()},
+            "outputs": manifest["outputs"]}
+
+
+
+def render_pca_html(payload, plotly_js, output):
+    """Write an offline, fixed-coordinate PCA dashboard from saved projections."""
+    import json
+    from pathlib import Path
+
+    if len(payload.get("models", [])) != 3:
+        raise ValueError("The PCA dashboard requires three model-specific maps")
+    policies = {"baseline", "transparency", "evidence_contract"}
+    for model in payload["models"]:
+        if len(model["explained_variance_ratio"]) != 3:
+            raise ValueError("Each model needs exactly three explained-variance ratios")
+        if len(model["axis_range"]) != 2 or model["axis_range"][0] >= model["axis_range"][1]:
+            raise ValueError("Each model needs a fixed, shared-axis interval")
+        tasks = {}
+        for point in model["points"]:
+            if point["policy"] not in policies or point["outcome"] not in {"W", "C"}:
+                raise ValueError("Unexpected policy or saved outcome")
+            tasks.setdefault(point["task_id"], []).append(point["policy"])
+        if any(len(items) != 3 or set(items) != policies for items in tasks.values()):
+            raise ValueError("Only complete, unique task triplets may enter a map")
+    encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+    encoded = encoded.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    page = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTA prompt-state PCA</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#182230;font:15px/1.45 system-ui,-apple-system,sans-serif}
+main{max-width:1760px;margin:auto;padding:20px}h1{font-size:23px;line-height:1.2;margin:0 0 8px}p{margin:7px 0}.intro{max-width:1080px;color:#425166}
+.controls{background:white;border:1px solid #dce1e7;border-radius:9px;padding:12px 15px;margin:16px 0 10px}.buttons,.sequences,.legend{display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+button{font:inherit;font-size:13px;border:1px solid #bbc6d2;background:#fff;color:#24374d;border-radius:5px;padding:5px 10px;cursor:pointer}button:hover{background:#eef3f8}button:focus-visible,input:focus-visible{outline:3px solid #6ca7e7;outline-offset:2px}
+.sequences{margin-top:10px;gap:7px 15px}.sequences label{white-space:nowrap;font-size:13px;cursor:pointer}.sequences input{accent-color:#356ba0;vertical-align:middle;margin:0 5px 0 0}
+.legend{font-size:13px;padding:7px 1px;gap:10px 20px}.key{display:inline-flex;align-items:center;gap:6px}.dot{width:9px;height:9px;display:inline-block;border-radius:50%}.diamond{width:8px;height:8px;display:inline-block;transform:rotate(45deg);background:#556372;margin-right:1px}
+.maps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{min-width:0;background:white;border:1px solid #dce1e7;border-radius:9px;overflow:hidden}.card-head{padding:12px 14px 0}.card h2{font-size:18px;line-height:1.2;margin:0 0 5px}.counts,.variance{font-size:12px;color:#556477}.plot{width:100%;height:525px}.sequence-counts{padding:0 14px 12px;font-size:12px;color:#556477}.caveat{font-size:13px;color:#526174;margin-top:14px;max-width:1250px}
+@media(max-width:1080px){.maps{grid-template-columns:1fr}.plot{height:580px}.card-head{padding-top:13px}}@media(max-width:550px){main{padding:12px}.plot{height:430px}.buttons{gap:6px}.buttons button{font-size:12px}}
+</style>
+<script>__PLOTLY_JS__</script></head><body><main>
+<h1>Before-answer states</h1>
+<p class="intro">Each point is one saved prompt state, labeled by the answer that followed. W means unsupported success or invented details; C means neither flag. C does not guarantee complete correctness.</p>
+<div class="controls" aria-label="Outcome sequence filters">
+<div class="buttons"><strong style="font-size:13px">Show tasks:</strong><button data-preset="all">All sequences</button><button data-preset="comparison">W-W-C + C-C-C</button><button data-preset="wwc">W-W-C</button><button data-preset="ccc">C-C-C</button><button data-preset="new">New error under transparency</button></div>
+<div class="sequences" id="sequences"></div>
+<p style="font-size:12px;color:#59687a;margin:8px 0 0">Sequence order: baseline → transparency → evidence contract. Filtering keeps the same PCA coordinates and axis limits.</p>
+</div>
+<div class="legend" aria-label="Point legend"><span class="key"><i class="dot" style="background:#4c78a8"></i>Baseline</span><span class="key"><i class="dot" style="background:#1b9e77"></i>Transparency</span><span class="key"><i class="dot" style="background:#e69f00"></i>Evidence contract</span><span class="key"><i class="diamond"></i>W: either error</span><span class="key"><i class="dot" style="background:#556372"></i>C: neither flag</span></div>
+<div class="maps" id="maps"></div>
+<p class="caveat">Arrows connect the same task from baseline to transparency and from baseline to evidence contract. They show instruction differences, not an answer unfolding in time. Each model has its own PCA; coordinates and distances cannot be compared across models. Three-dimensional distances are projected approximations. Separation or overlap does not establish a hallucination mechanism.</p>
+</main><script type="application/json" id="pca-data">__PAYLOAD__</script><script>
+'use strict';
+const data=JSON.parse(document.getElementById('pca-data').textContent);
+const policyInfo=[['baseline','Baseline','#4c78a8'],['transparency','Transparency','#1b9e77'],['evidence_contract','Evidence contract','#e69f00']];
+const sequenceOrder=['W-W-C','W-C-C','W-W-W','C-W-C','C-W-W','C-C-C','W-C-W','C-C-W'];
+const observed=new Set(data.models.flatMap(m=>m.points.map(p=>p.sequence)));
+const sequences=sequenceOrder.filter(s=>observed.has(s));
+for(const s of [...observed].sort())if(!sequences.includes(s))sequences.push(s);
+const selected=new Set(sequences), checkboxes=new Map();
+const escapeText=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+for(const s of sequences){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=true;box.setAttribute('aria-label','Show '+s);label.append(box,document.createTextNode(s));document.getElementById('sequences').append(label);checkboxes.set(s,box);box.addEventListener('change',()=>{if(box.checked)selected.add(s);else selected.delete(s);redrawAll();});}
+const maps=[];
+data.models.forEach((model,i)=>{const card=document.createElement('section');card.className='card';const head=document.createElement('div');head.className='card-head';const title=document.createElement('h2');title.textContent=model.name;const counts=document.createElement('div');counts.className='counts';counts.setAttribute('aria-live','polite');const variance=document.createElement('div');variance.className='variance';variance.textContent='PC1–3 explain '+(100*model.explained_variance_ratio.reduce((a,b)=>a+b,0)).toFixed(1)+'% of variance';head.append(title,counts,variance);const graph=document.createElement('div');graph.className='plot';graph.id='pca-map-'+i;const seqCounts=document.createElement('div');seqCounts.className='sequence-counts';card.append(head,graph,seqCounts);document.getElementById('maps').append(card);maps.push({model,graph,counts,seqCounts});});
+function tracesFor(model){
+ const points=model.points.filter(p=>selected.has(p.sequence)),taskMap=new Map();
+ for(const p of points){if(!taskMap.has(p.task_id))taskMap.set(p.task_id,{});taskMap.get(p.task_id)[p.policy]=p;}
+ const traces=[];
+ for(const [target,,color] of policyInfo.slice(1)){
+  const x=[],y=[],z=[],cx=[],cy=[],cz=[],u=[],v=[],w=[];
+  for(const task of taskMap.values()){const a=task.baseline,b=task[target];if(!a||!b)continue;const dx=b.pc1-a.pc1,dy=b.pc2-a.pc2,dz=b.pc3-a.pc3,norm=Math.hypot(dx,dy,dz);x.push(a.pc1,b.pc1,null);y.push(a.pc2,b.pc2,null);z.push(a.pc3,b.pc3,null);if(norm>0){cx.push(b.pc1);cy.push(b.pc2);cz.push(b.pc3);u.push(dx/norm);v.push(dy/norm);w.push(dz/norm);}}
+  traces.push({type:'scatter3d',mode:'lines',x,y,z,line:{color,width:1.7},opacity:0.30,hoverinfo:'skip',showlegend:false,connectgaps:false});
+  traces.push({type:'cone',x:cx,y:cy,z:cz,u,v,w,anchor:'tip',sizemode:'absolute',sizeref:(model.axis_range[1]-model.axis_range[0])*0.018,colorscale:[[0,color],[1,color]],showscale:false,opacity:0.58,hoverinfo:'skip',showlegend:false});
+ }
+ for(const [policy,label,color] of policyInfo)for(const outcome of ['C','W']){
+  const subset=points.filter(p=>p.policy===policy&&p.outcome===outcome);
+  traces.push({type:'scatter3d',mode:'markers',name:label+' · '+outcome,x:subset.map(p=>p.pc1),y:subset.map(p=>p.pc2),z:subset.map(p=>p.pc3),marker:{color,size:outcome==='W'?4.3:3.5,symbol:outcome==='W'?'diamond':'circle',opacity:0.91,line:{color:'#ffffff',width:0.35}},customdata:subset.map(p=>[p.task_id,label,p.outcome,p.sequence,p.failure_category,p.pressure_type,p.false_success,p.fabricated_details].map(escapeText)),hovertemplate:'<b>%{customdata[0]}</b><br>%{customdata[1]} · %{customdata[2]}<br>Sequence: %{customdata[3]}<br>Category: %{customdata[4]}<br>Pressure: %{customdata[5]}<br>Unsupported success: %{customdata[6]}<br>Invented details: %{customdata[7]}<extra></extra>',showlegend:false});
+ }
+ return {traces,points,tasks:taskMap};
+}
+function redrawAll(){for(const entry of maps){const {model,graph,counts,seqCounts}=entry,{traces,points,tasks}=tracesFor(model),totalTasks=model.points.length/3;
+ const axis=(index)=>({title:{text:'PC'+(index+1)+' ('+(100*model.explained_variance_ratio[index]).toFixed(1)+'%)',font:{size:11}},range:model.axis_range.slice(),autorange:false,nticks:4,tickfont:{size:9},showbackground:true,backgroundcolor:'#fafbfc',gridcolor:'#e2e7ed',zerolinecolor:'#bcc7d1'});
+ const layout={margin:{l:0,r:0,b:0,t:0},paper_bgcolor:'#fff',font:{family:'system-ui, sans-serif',color:'#34445a'},showlegend:false,hovermode:'closest',uirevision:model.id+'-fixed-pca',scene:{xaxis:axis(0),yaxis:axis(1),zaxis:axis(2),aspectmode:'cube',camera:{eye:{x:1.5,y:1.5,z:1.15}},dragmode:'orbit',uirevision:model.id+'-fixed-camera'}};
+ Plotly.react(graph,traces,layout,{responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['toImage'],showTips:false});
+ const nW=points.filter(p=>p.outcome==='W').length;counts.textContent=tasks.size+' / '+totalTasks+' tasks · '+points.length+' answers ('+nW+' W, '+(points.length-nW)+' C)';
+ const bySequence=new Map();for(const task of tasks.values()){const s=task.baseline.sequence;bySequence.set(s,(bySequence.get(s)||0)+1);}seqCounts.textContent=sequences.filter(s=>bySequence.has(s)).map(s=>s+': '+bySequence.get(s)).join(' · ')||(selected.size?'No tasks in selected sequences.':'No sequences selected.');
+ }}
+for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{const preset=button.dataset.preset;selected.clear();for(const s of sequences){const yes=preset==='all'||(preset==='comparison'&&['W-W-C','C-C-C'].includes(s))||(preset==='wwc'&&s==='W-W-C')||(preset==='ccc'&&s==='C-C-C')||(preset==='new'&&s.startsWith('C-W-'));checkboxes.get(s).checked=yes;if(yes)selected.add(s);}redrawAll();});
+redrawAll();
+</script></body></html>'''
+    page = page.replace("__PLOTLY_JS__", plotly_js).replace("__PAYLOAD__", encoded)
+    Path(output).write_text(page, encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -2396,8 +2791,14 @@ def main():
     packets.add_argument("--plan", type=Path, default=ROOT / "config/during_answer.json")
     packets.add_argument("--cache-dir", type=Path, required=True)
     packets.add_argument("--output", type=Path, required=True)
+    pca = commands.add_parser("pca", help="Visualize original cached final-input states with one pooled PCA per model")
+    pca.add_argument("--cache-dir", type=Path, required=True)
+    pca.add_argument("--projection-cache-dir", type=Path, required=True)
+    pca.add_argument("--output-prefix", type=Path, default=ROOT / "results/pca")
     args = parser.parse_args()
-    if args.command == "during-packets":
+    if args.command == "pca":
+        print(json.dumps(pca_visualize(args.root, args.cache_dir, args.projection_cache_dir, args.output_prefix)), flush=True)
+    elif args.command == "during-packets":
         during_packets(args.root, args.plan, args.cache_dir, args.output, args.model)
     elif args.command == "during-report":
         during_report(args.root, args.plan, args.cache_dir, args.reviews, args.output_prefix)
