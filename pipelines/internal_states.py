@@ -2690,7 +2690,7 @@ def pca_focused_figure(payload, output):
     colors = {"baseline": "#4c78a8", "transparency": "#1b9e77", "evidence_contract": "#e69f00"}
     groups = (("C-C-C", "o", "--", .13), ("W-W-C", "^", "-", .52))
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 9}):
-        figure = plt.figure(figsize=(15, 5.8))
+        figure = plt.figure(figsize=(15, 5.2))
         for index, model in enumerate(payload["models"]):
             ax = figure.add_subplot(1, 3, index+1, projection="3d")
             tasks = {}
@@ -2719,26 +2719,21 @@ def pca_focused_figure(payload, output):
             ax.set_box_aspect((1, 1, 1))
             ax.view_init(elev=22, azim=40)
             ax.tick_params(labelsize=7, pad=0)
-            counts = model["sequence_counts"]
-            ax.set_title(model["name"] + f" · 3 PCs: {100*sum(model['explained_variance_ratio']):.1f}%\n"
-                + f"W-W-C: {counts['W-W-C']} tasks · C-C-C: {counts['C-C-C']} tasks", fontsize=10, pad=7)
+            ax.set_title(model["name"] + f" · 3 PCs: {100*sum(model['explained_variance_ratio']):.1f}%", fontsize=11, pad=7)
         handles = [Line2D([], [], color=color, lw=3, label=policy.replace("_", " ").capitalize())
                    for policy, color in colors.items()]
         handles += [Line2D([], [], marker="^", ls="-", color="#4b5563",
-                          label="W-W-C triangles (contract = C, corrected)"),
+                          label="W-W-C"),
                     Line2D([], [], marker="o", ls="--", color="#88919a",
-                          label="C-C-C circles (always-clean reference)")]
-        figure.legend(handles=handles, loc="upper center", ncol=3, frameon=False,
-                      fontsize=9, bbox_to_anchor=(.5, .99))
-        figure.subplots_adjust(left=.06, right=.97, bottom=.18, top=.77, wspace=.24)
+                          label="C-C-C")]
+        figure.legend(handles=handles, loc="upper center", ncol=5, frameon=False,
+                      fontsize=10, bbox_to_anchor=(.5, .99))
+        figure.subplots_adjust(left=.06, right=.97, bottom=.08, top=.83, wspace=.24)
         for ax, model in zip(figure.axes, payload["models"]):
             position = ax.get_position()
             figure.text(position.x0-.035, (position.y0+position.y1)/2,
                 f"PC3 ({100*model['explained_variance_ratio'][2]:.1f}%)",
                 rotation=90, va="center", ha="center", fontsize=9)
-        figure.text(.5, .025,
-            "Before-answer states labeled by saved answers; projected distances are approximate, and separation does not establish a cause of false reporting.\n"
-            "No generation, rescoring, classifiers, or interventions.", ha="center", fontsize=8, color="#526174")
         figure.savefig(output, dpi=190, bbox_inches="tight", facecolor="white")
         plt.close(figure)
 
@@ -2836,6 +2831,7 @@ def pca_focus(root, source_prefix, output_prefix):
         "new_answers": 0, "new_scoring": 0, "classifiers": False, "interventions": False, "Nemotron_touched": False,
         "fixed_projection_axis_limits": True, "other_sequences_accessible": True,
         "caption": "Before-answer states labeled by saved answers; projected distances are approximate, and separation does not establish a cause of false reporting. No generation, rescoring, classifiers, or interventions.",
+        "caption_in_report_only": True, "group_counts_in_report_only": True,
         "outputs": {"html": {"file": str(html.relative_to(root)), "sha256": sha256_file(html), "bytes": html.stat().st_size},
                     "png": {"file": str(figure_path.relative_to(root)), "sha256": sha256_file(figure_path), "bytes": figure_path.stat().st_size}}}
     presentation_path = output_prefix.with_suffix(".json")
@@ -2899,9 +2895,9 @@ button{font:inherit;font-size:13px;border:1px solid #bbc6d2;background:#fff;colo
 <details id="other-panel"><summary>Other observed sequences</summary><div class="buttons"><button data-preset="all">Show all sequences</button><button data-preset="other">Only other sequences</button><button data-preset="hide-other">Hide other sequences</button></div><div class="sequences" id="other-sequences"></div></details>
 <p style="font-size:12px;color:#59687a;margin:8px 0 0">Sequence order: baseline → transparency → evidence contract. Filtering keeps the same PCA coordinates and axis limits.</p>
 </div>
-<div class="legend" aria-label="Point legend"><span class="key"><i class="dot" style="background:#4c78a8"></i>Baseline</span><span class="key"><i class="dot" style="background:#1b9e77"></i>Transparency</span><span class="key"><i class="dot" style="background:#e69f00"></i>Evidence contract</span><span class="key"><span class="shape">▲</span><i class="line-key"></i>W-W-C triangles (contract = C, corrected)</span><span class="key"><i class="dot" style="background:#556372"></i><i class="line-key dashed"></i>C-C-C always-clean reference</span><span class="key"><i class="square"></i>Other sequences</span></div>
+<div class="legend" aria-label="Point legend"><span class="key"><i class="dot" style="background:#4c78a8"></i>Baseline</span><span class="key"><i class="dot" style="background:#1b9e77"></i>Transparency</span><span class="key"><i class="dot" style="background:#e69f00"></i>Evidence contract</span><span class="key"><span class="shape">▲</span><i class="line-key"></i>W-W-C</span><span class="key"><i class="dot" style="background:#556372"></i><i class="line-key dashed"></i>C-C-C</span><span class="key"><i class="square"></i>Other sequences</span></div>
 <div class="maps" id="maps"></div>
-<p class="caveat">Before-answer states labeled by saved answers; projected distances are approximate, and separation does not establish a cause of false reporting. No generation, rescoring, classifiers, or interventions. Arrows connect the same task from baseline to transparency and baseline to evidence contract: instruction differences, not an answer unfolding in time. Each model has its own PCA; coordinates and distances cannot be compared across models.</p>
+
 </main><script type="application/json" id="pca-data">__PAYLOAD__</script><script>
 'use strict';
 const data=JSON.parse(document.getElementById('pca-data').textContent);
@@ -2916,7 +2912,7 @@ const escapeText=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&l
 const groupOf=point=>mainSequences.includes(point.sequence)?point.sequence:'other';
 for(const s of sequences){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=selected.has(s);box.setAttribute('aria-label','Show '+s);label.append(box,document.createTextNode(s));document.getElementById(mainSequences.includes(s)?'main-sequences':'other-sequences').append(label);checkboxes.set(s,box);box.addEventListener('change',()=>{if(box.checked)selected.add(s);else selected.delete(s);redrawAll();});}
 const maps=[];
-data.models.forEach((model,i)=>{const card=document.createElement('section');card.className='card';const head=document.createElement('div');head.className='card-head';const title=document.createElement('h2');title.textContent=model.name;const counts=document.createElement('div');counts.className='counts';counts.setAttribute('aria-live','polite');const groupCounts=document.createElement('div');groupCounts.className='counts group-counts';groupCounts.setAttribute('aria-live','polite');const variance=document.createElement('div');variance.className='variance';variance.textContent='PC1–3 explain '+(100*model.explained_variance_ratio.reduce((a,b)=>a+b,0)).toFixed(1)+'% of variance';head.append(title,counts,groupCounts,variance);const graph=document.createElement('div');graph.className='plot';graph.id='pca-map-'+i;const seqCounts=document.createElement('div');seqCounts.className='sequence-counts';card.append(head,graph,seqCounts);document.getElementById('maps').append(card);maps.push({model,graph,counts,groupCounts,seqCounts});});
+data.models.forEach((model,i)=>{const card=document.createElement('section');card.className='card';const head=document.createElement('div');head.className='card-head';const title=document.createElement('h2');title.textContent=model.name;const counts=document.createElement('div');counts.className='counts';counts.setAttribute('aria-live','polite');const variance=document.createElement('div');variance.className='variance';variance.textContent='PC1–3 explain '+(100*model.explained_variance_ratio.reduce((a,b)=>a+b,0)).toFixed(1)+'% of variance';head.append(title,counts,variance);const graph=document.createElement('div');graph.className='plot';graph.id='pca-map-'+i;const seqCounts=document.createElement('div');seqCounts.className='sequence-counts';card.append(head,graph,seqCounts);document.getElementById('maps').append(card);maps.push({model,graph,counts,seqCounts});});
 function tracesFor(model){
  const points=model.points.filter(p=>selected.has(p.sequence)),taskMap=new Map();
  for(const p of points){if(!taskMap.has(p.task_id))taskMap.set(p.task_id,{});taskMap.get(p.task_id)[p.policy]=p;}
@@ -2936,14 +2932,13 @@ function tracesFor(model){
  }
  return {traces,points,tasks:taskMap};
 }
-function redrawAll(){for(const entry of maps){const {model,graph,counts,groupCounts,seqCounts}=entry,{traces,points,tasks}=tracesFor(model),totalTasks=model.points.length/3;
+function redrawAll(){for(const entry of maps){const {model,graph,counts,seqCounts}=entry,{traces,points,tasks}=tracesFor(model),totalTasks=model.points.length/3;
  const axis=index=>({title:{text:'PC'+(index+1)+' ('+(100*model.explained_variance_ratio[index]).toFixed(1)+'%)',font:{size:11}},range:model.axis_range.slice(),autorange:false,nticks:4,tickfont:{size:9},showbackground:true,backgroundcolor:'#fafbfc',gridcolor:'#e2e7ed',zerolinecolor:'#bcc7d1'});
  const layout={margin:{l:0,r:0,b:0,t:0},paper_bgcolor:'#fff',font:{family:'system-ui, sans-serif',color:'#34445a'},showlegend:false,hovermode:'closest',uirevision:model.id+'-fixed-pca',scene:{xaxis:axis(0),yaxis:axis(1),zaxis:axis(2),aspectmode:'cube',camera:{eye:{x:1.5,y:1.5,z:1.15}},dragmode:'orbit',uirevision:model.id+'-fixed-camera'}};
  Plotly.react(graph,traces,layout,{responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['toImage'],showTips:false});
  counts.textContent=tasks.size+' / '+totalTasks+' tasks shown · '+points.length+' answers';
  const shown=new Map(),total=new Map();for(const task of tasks.values()){const s=task.baseline.sequence;shown.set(s,(shown.get(s)||0)+1);}for(const p of model.points)if(p.policy==='baseline')total.set(p.sequence,(total.get(p.sequence)||0)+1);
- groupCounts.textContent=mainSequences.map(s=>s+': '+(shown.get(s)||0)+' / '+(total.get(s)||0)+' tasks').join(' · ');
- const extra=sequences.filter(s=>!mainSequences.includes(s)&&shown.has(s));seqCounts.textContent=extra.length?'Other groups: '+extra.map(s=>s+': '+shown.get(s)).join(' · '):'Triangles and solid arrows: W-W-C. Circles and dashed arrows: C-C-C.';
+ const extra=sequences.filter(s=>!mainSequences.includes(s)&&shown.has(s));seqCounts.textContent=extra.length?'Other groups: '+extra.map(s=>s+': '+shown.get(s)).join(' · '):'';
  }}
 for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{const preset=button.dataset.preset;if(preset==='hide-other'){for(const s of sequences)if(!mainSequences.includes(s))selected.delete(s);}else{selected.clear();for(const s of sequences){const yes=preset==='all'||(preset==='comparison'&&mainSequences.includes(s))||(preset==='wwc'&&s==='W-W-C')||(preset==='ccc'&&s==='C-C-C')||(preset==='other'&&!mainSequences.includes(s));if(yes)selected.add(s);}}for(const [s,box]of checkboxes)box.checked=selected.has(s);redrawAll();});
 redrawAll();

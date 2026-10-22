@@ -4024,8 +4024,8 @@
   "outputs": {
     "html": {
       "file": "results/pca.html",
-      "sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
-      "bytes": 5445093
+      "sha256": "5e691781a0101080698c6a7c4e9571539025dc02774c444629ba4f5bd9da46a4",
+      "bytes": 5444208
     },
     "png": {
       "file": "results/pca.png",
@@ -4063,23 +4063,22 @@
     "manifest": "results/pca_focused.json",
     "figure": "results/pca_focused.png",
     "pca_refits": 0,
-    "presentation_pipeline_sha256": "6c2ab568dc22050b5030aa99932e4cdd6e21d8ca9c47ca45e0cdec3b7261c952"
+    "presentation_pipeline_sha256": "1db277d07965156a78a151dfc4b042c1c3daab6a77fceaf6519f84e3970fd9f9"
   },
   "browser_rendering_verification": {
     "status": "passed",
-    "html_sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
-    "source_csv_sha256": "1e1fc1859a169b4e8ae38c54aad700f77e523984071f3565e9d5f635affea0cb",
-    "default_points": 723,
-    "all_accessible_points": 858,
-    "unchanged_coordinates_verified": 2574,
-    "fixed_triangles_under_all_policies": true,
-    "contract_triangle_hover_outcome": "C",
-    "solid_vs_faint_dashed_connectors": true,
-    "fixed_axes_and_equal_scaling": true,
-    "group_filters_and_zero_counts": true,
-    "external_requests": 0,
+    "html_sha256": "5e691781a0101080698c6a7c4e9571539025dc02774c444629ba4f5bd9da46a4",
+    "default_points_by_model": {
+      "Ministral": 204,
+      "Qwen": 258,
+      "Gemma": 261
+    },
+    "footer_and_group_count_lines_removed": true,
+    "shortened_group_legend": true,
+    "group_filter_and_fixed_axes": true,
     "javascript_errors": 0,
-    "qa_log_sha256": "0efd92c6b359473604506e03baf82edf05d2ffab054c78fc382ea0f8c70253d4",
-    "note": "Presentation checks only; no PCA fitting, state-cache access, scoring or statistical tests."
+    "external_requests": 0,
+    "qa_log_sha256": "537a6abff7cf6732d047881b2a3eb01723bb426f299d78f673e453d0b493a66b",
+    "note": "Presentation smoke check only; no PCA fitting, state-cache access, scoring or statistical tests."
   }
 }

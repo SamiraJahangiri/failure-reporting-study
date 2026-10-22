@@ -1,14 +1,14 @@
 {
   "phase": "PCA_fixed_group_presentation_only",
-  "created_at": "2026-10-22T22:23:34.582670+00:00",
-  "source_PCA_manifest_sha256_before_update": "c335d08f28a290671bc6312b403daeb73cdd2fa3608b98cefbdc2078dbdc0bff",
+  "created_at": "2026-10-22T23:02:19.717308+00:00",
+  "source_PCA_manifest_sha256_before_update": "d25e7d7f9349d94072287e4a3674aa0cd3894785119ed14744a97021c13e1c51",
   "source_coordinates": "results/pca.csv",
   "source_coordinates_sha256": "1e1fc1859a169b4e8ae38c54aad700f77e523984071f3565e9d5f635affea0cb",
   "original_all_task_overview": "results/pca.png",
   "original_all_task_overview_sha256": "b156f37cd64b6559d5f5135d01302902e5c01d74660c31321ab8b0577bd386b0",
   "original_PCA_plan_sha256": "09faa8468e567c951063775f0ecf52fea1126972a9412c91ab32885eb0585048",
   "original_fit_pipeline_sha256": "cd0e281198796fbd33dbced56c848d304cb4c3c8932cb488d19dbcad0b525698",
-  "presentation_pipeline_sha256": "6c2ab568dc22050b5030aa99932e4cdd6e21d8ca9c47ca45e0cdec3b7261c952",
+  "presentation_pipeline_sha256": "1db277d07965156a78a151dfc4b042c1c3daab6a77fceaf6519f84e3970fd9f9",
   "default_sequences": [
     "W-W-C",
     "C-C-C"
@@ -350,33 +350,34 @@
   "fixed_projection_axis_limits": true,
   "other_sequences_accessible": true,
   "caption": "Before-answer states labeled by saved answers; projected distances are approximate, and separation does not establish a cause of false reporting. No generation, rescoring, classifiers, or interventions.",
+  "caption_in_report_only": true,
+  "group_counts_in_report_only": true,
   "outputs": {
     "html": {
       "file": "results/pca.html",
-      "sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
-      "bytes": 5445093
+      "sha256": "5e691781a0101080698c6a7c4e9571539025dc02774c444629ba4f5bd9da46a4",
+      "bytes": 5444208
     },
     "png": {
       "file": "results/pca_focused.png",
-      "sha256": "55be194b0240fb7c465d6cac17734d519ebf86c0fcc59f16d4b8c0a9c3b92bac",
-      "bytes": 530786
+      "sha256": "ec2c8b419509d15a441132b749a7859962a4fa6addc3be22af00f5aa7e6719ca",
+      "bytes": 553290
     }
   },
   "browser_rendering_verification": {
     "status": "passed",
-    "html_sha256": "6c47cfc7ad7ee48e2068a0d258a21b8751d542ac53bc5eebdd377ee048db713f",
-    "source_csv_sha256": "1e1fc1859a169b4e8ae38c54aad700f77e523984071f3565e9d5f635affea0cb",
-    "default_points": 723,
-    "all_accessible_points": 858,
-    "unchanged_coordinates_verified": 2574,
-    "fixed_triangles_under_all_policies": true,
-    "contract_triangle_hover_outcome": "C",
-    "solid_vs_faint_dashed_connectors": true,
-    "fixed_axes_and_equal_scaling": true,
-    "group_filters_and_zero_counts": true,
-    "external_requests": 0,
+    "html_sha256": "5e691781a0101080698c6a7c4e9571539025dc02774c444629ba4f5bd9da46a4",
+    "default_points_by_model": {
+      "Ministral": 204,
+      "Qwen": 258,
+      "Gemma": 261
+    },
+    "footer_and_group_count_lines_removed": true,
+    "shortened_group_legend": true,
+    "group_filter_and_fixed_axes": true,
     "javascript_errors": 0,
-    "qa_log_sha256": "0efd92c6b359473604506e03baf82edf05d2ffab054c78fc382ea0f8c70253d4",
-    "note": "Presentation checks only; no PCA fitting, state-cache access, scoring or statistical tests."
+    "external_requests": 0,
+    "qa_log_sha256": "537a6abff7cf6732d047881b2a3eb01723bb426f299d78f673e453d0b493a66b",
+    "note": "Presentation smoke check only; no PCA fitting, state-cache access, scoring or statistical tests."
   }
 }
