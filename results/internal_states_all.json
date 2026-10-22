@@ -1,6 +1,6 @@
 {
-  "purpose": "Requested minimal re-render of existing combined-error results only",
-  "created_at": "2026-10-22T20:01:16.060375+00:00",
+  "purpose": "Requested all-three-policy-pairs rendering of existing combined-error results; renamed from internal_states_combined",
+  "created_at": "2026-10-22T20:12:41.092672+00:00",
   "source_csv": "results/internal_states.csv",
   "source_csv_sha256": "0286a2ec4b149de9b989d45a118b7e6304c9b7953a84915a68541aa0256c03b2",
   "original_figure_preserved": true,
@@ -448,6 +448,224 @@
           "contrast": 0.0027878694236278534,
           "ci_low": -0.0013479279354214667,
           "ci_high": 0.006899196747690438
+        }
+      ]
+    },
+    {
+      "model": "mistralai/Ministral-3-8B-Instruct-2512",
+      "source_policy": "transparency",
+      "target_policy": "evidence_contract",
+      "metric": "either",
+      "blocks": 34,
+      "matched_case_n": 16,
+      "matched_unique_control_n": 23,
+      "unmatched_case_n": 18,
+      "disappeared_n": 34,
+      "excluded_n": 2,
+      "rows": [
+        {
+          "block": 1,
+          "contrast": -9.05121305549983e-06,
+          "ci_low": -1.8276336322742282e-05,
+          "ci_high": -3.882973032887114e-07
+        },
+        {
+          "block": 2,
+          "contrast": -1.0721385478973389e-05,
+          "ci_low": -2.1321359963621944e-05,
+          "ci_high": -1.047269915943627e-06
+        },
+        {
+          "block": 3,
+          "contrast": 2.2591400920646265e-05,
+          "ci_low": 4.5574925934488425e-06,
+          "ci_high": 4.020889200546662e-05
+        },
+        {
+          "block": 4,
+          "contrast": 2.561260771472007e-05,
+          "ci_low": -1.684505823504878e-05,
+          "ci_high": 6.430181056202854e-05
+        },
+        {
+          "block": 5,
+          "contrast": 3.2476469641551375e-05,
+          "ci_low": -2.2518459263665137e-05,
+          "ci_high": 8.767292783886657e-05
+        },
+        {
+          "block": 6,
+          "contrast": -4.718330455943942e-05,
+          "ci_low": -0.00025884651258820666,
+          "ci_high": 0.0001542425718071172
+        },
+        {
+          "block": 7,
+          "contrast": 0.00019347667694091797,
+          "ci_low": -0.00027469795240904206,
+          "ci_high": 0.0006781398500606882
+        },
+        {
+          "block": 8,
+          "contrast": 6.737932562828064e-05,
+          "ci_low": -0.0009628966683521866,
+          "ci_high": 0.0011473757826024663
+        },
+        {
+          "block": 9,
+          "contrast": -0.00023227930068969727,
+          "ci_low": -0.001391288245213218,
+          "ci_high": 0.0009944789693690822
+        },
+        {
+          "block": 10,
+          "contrast": -0.0007421760819852352,
+          "ci_low": -0.0018857402261346578,
+          "ci_high": 0.0003625664947321634
+        },
+        {
+          "block": 11,
+          "contrast": -0.0009205297101289034,
+          "ci_low": -0.0021928361325990408,
+          "ci_high": 0.00029783934587612575
+        },
+        {
+          "block": 12,
+          "contrast": -0.0010895014274865389,
+          "ci_low": -0.0025446895859204234,
+          "ci_high": 0.000327633111737667
+        },
+        {
+          "block": 13,
+          "contrast": -0.002084078500047326,
+          "ci_low": -0.0038946321001276374,
+          "ci_high": -0.00031117526232265016
+        },
+        {
+          "block": 14,
+          "contrast": -0.0023174299858510494,
+          "ci_low": -0.004393587308004499,
+          "ci_high": -0.0003193097771145407
+        },
+        {
+          "block": 15,
+          "contrast": -0.002814254257827997,
+          "ci_low": -0.004375440016156062,
+          "ci_high": -0.0012764812388923025
+        },
+        {
+          "block": 16,
+          "contrast": -0.0006767190061509609,
+          "ci_low": -0.00235635974095203,
+          "ci_high": 0.0009017795266117888
+        },
+        {
+          "block": 17,
+          "contrast": 0.0006557498127222061,
+          "ci_low": -0.0011116049368865787,
+          "ci_high": 0.002394462889060376
+        },
+        {
+          "block": 18,
+          "contrast": 0.002019135747104883,
+          "ci_low": -0.001220711343921721,
+          "ci_high": 0.005438097135629504
+        },
+        {
+          "block": 19,
+          "contrast": 0.0007972894236445427,
+          "ci_low": -0.005870888731442392,
+          "ci_high": 0.006927029625512657
+        },
+        {
+          "block": 20,
+          "contrast": 0.0005209846422076225,
+          "ci_low": -0.00726037269923836,
+          "ci_high": 0.007700998825021087
+        },
+        {
+          "block": 21,
+          "contrast": -0.006713605485856533,
+          "ci_low": -0.021257421071641146,
+          "ci_high": 0.00572239004541188
+        },
+        {
+          "block": 22,
+          "contrast": -0.010244929231703281,
+          "ci_low": -0.029650559835135936,
+          "ci_high": 0.0064095691777765725
+        },
+        {
+          "block": 23,
+          "contrast": -0.013452905230224133,
+          "ci_low": -0.03988783231470734,
+          "ci_high": 0.008652903791517013
+        },
+        {
+          "block": 24,
+          "contrast": -0.018138837069272995,
+          "ci_low": -0.04858585731126368,
+          "ci_high": 0.006655477965250603
+        },
+        {
+          "block": 25,
+          "contrast": -0.017652513459324837,
+          "ci_low": -0.04607975161634385,
+          "ci_high": 0.005720567936077713
+        },
+        {
+          "block": 26,
+          "contrast": -0.014812814071774483,
+          "ci_low": -0.03951479909010232,
+          "ci_high": 0.005773656675592064
+        },
+        {
+          "block": 27,
+          "contrast": -0.012283949181437492,
+          "ci_low": -0.034626257978379725,
+          "ci_high": 0.006188902864232641
+        },
+        {
+          "block": 28,
+          "contrast": -0.01401798240840435,
+          "ci_low": -0.03720730664208531,
+          "ci_high": 0.004789120936766264
+        },
+        {
+          "block": 29,
+          "contrast": -0.01324370875954628,
+          "ci_low": -0.032009413838386534,
+          "ci_high": 0.0022035964764654608
+        },
+        {
+          "block": 30,
+          "contrast": -0.018960677087306976,
+          "ci_low": -0.0363333857152611,
+          "ci_high": -0.00465666693635285
+        },
+        {
+          "block": 31,
+          "contrast": -0.01658572442829609,
+          "ci_low": -0.03466287753544748,
+          "ci_high": -0.0018563488963991407
+        },
+        {
+          "block": 32,
+          "contrast": -0.02010980434715748,
+          "ci_low": -0.036885197879746555,
+          "ci_high": -0.007124068774282936
+        },
+        {
+          "block": 33,
+          "contrast": -0.017720621079206467,
+          "ci_low": -0.03643917283043265,
+          "ci_high": -0.003100910317152739
+        },
+        {
+          "block": 34,
+          "contrast": -0.017371296882629395,
+          "ci_low": -0.0373940990306437,
+          "ci_high": 0.000444658054038878
         }
       ]
     },
@@ -908,6 +1126,236 @@
           "contrast": 0.01666788011789322,
           "ci_low": 0.011605799198150635,
           "ci_high": 0.0217299647629261
+        }
+      ]
+    },
+    {
+      "model": "Qwen/Qwen3-8B",
+      "source_policy": "transparency",
+      "target_policy": "evidence_contract",
+      "metric": "either",
+      "blocks": 36,
+      "matched_case_n": 12,
+      "matched_unique_control_n": 8,
+      "unmatched_case_n": 10,
+      "disappeared_n": 22,
+      "excluded_n": 3,
+      "rows": [
+        {
+          "block": 1,
+          "contrast": -3.581242708605714e-06,
+          "ci_low": -1.0287139764386665e-05,
+          "ci_high": 3.000224606353185e-06
+        },
+        {
+          "block": 2,
+          "contrast": 0.0008473197231069207,
+          "ci_low": 0.0005006231762763492,
+          "ci_high": 0.0011630763789526096
+        },
+        {
+          "block": 3,
+          "contrast": 0.0009146927623078227,
+          "ci_low": 0.0005161666934327513,
+          "ci_high": 0.001274188600416437
+        },
+        {
+          "block": 4,
+          "contrast": 0.000808879645774141,
+          "ci_low": 0.0003878870271478263,
+          "ci_high": 0.0012051809233298626
+        },
+        {
+          "block": 5,
+          "contrast": 0.0008674414129927754,
+          "ci_low": 0.00042452705231994515,
+          "ci_high": 0.0012852171220970375
+        },
+        {
+          "block": 6,
+          "contrast": 0.0007192193879745901,
+          "ci_low": 0.00035130382434545027,
+          "ci_high": 0.0010749028008603995
+        },
+        {
+          "block": 7,
+          "contrast": 0.0006220837240107358,
+          "ci_low": 0.00025688747198273634,
+          "ci_high": 0.0009725198143996749
+        },
+        {
+          "block": 8,
+          "contrast": 0.0007344584446400404,
+          "ci_low": 0.00034854420862302505,
+          "ci_high": 0.0011073691157889695
+        },
+        {
+          "block": 9,
+          "contrast": 0.0008197426213882864,
+          "ci_low": 0.000490660104469498,
+          "ci_high": 0.0011535034522239583
+        },
+        {
+          "block": 10,
+          "contrast": 0.0008364911191165447,
+          "ci_low": 0.00045481584916728934,
+          "ci_high": 0.0012183009825697865
+        },
+        {
+          "block": 11,
+          "contrast": 0.0008627917850390077,
+          "ci_low": 0.0004630843250652106,
+          "ci_high": 0.0012655525813897834
+        },
+        {
+          "block": 12,
+          "contrast": 0.001180524006485939,
+          "ci_low": 0.0007586309453472495,
+          "ci_high": 0.001605101288669175
+        },
+        {
+          "block": 13,
+          "contrast": 0.0016633511986583471,
+          "ci_low": 0.0010861479970571963,
+          "ci_high": 0.002226684999277495
+        },
+        {
+          "block": 14,
+          "contrast": 0.0019261494744569063,
+          "ci_low": 0.0013512367022485705,
+          "ci_high": 0.0025001416675877403
+        },
+        {
+          "block": 15,
+          "contrast": 0.0015253610908985138,
+          "ci_low": 0.0009478286057856167,
+          "ci_high": 0.0020971811063645873
+        },
+        {
+          "block": 16,
+          "contrast": 0.0014793076552450657,
+          "ci_low": 0.0008423077964835102,
+          "ci_high": 0.0021137145502507335
+        },
+        {
+          "block": 17,
+          "contrast": -0.00015332363545894623,
+          "ci_low": -0.0010464551176937674,
+          "ci_high": 0.0006889603981061747
+        },
+        {
+          "block": 18,
+          "contrast": -0.00024028215557336807,
+          "ci_low": -0.0012545137438792152,
+          "ci_high": 0.0006595199836738166
+        },
+        {
+          "block": 19,
+          "contrast": 0.00029279105365276337,
+          "ci_low": -0.0006278520166233647,
+          "ci_high": 0.0011080436989232094
+        },
+        {
+          "block": 20,
+          "contrast": 0.0008079614490270615,
+          "ci_low": -0.0007129195211746264,
+          "ci_high": 0.002247979076037151
+        },
+        {
+          "block": 21,
+          "contrast": -0.005404006689786911,
+          "ci_low": -0.010267404859621364,
+          "ci_high": -0.0006005169088894065
+        },
+        {
+          "block": 22,
+          "contrast": -0.010122420266270638,
+          "ci_low": -0.020009528001537547,
+          "ci_high": -0.0004445832077181034
+        },
+        {
+          "block": 23,
+          "contrast": -0.019961463287472725,
+          "ci_low": -0.03141562558012083,
+          "ci_high": -0.008386511588469148
+        },
+        {
+          "block": 24,
+          "contrast": -0.01964932680130005,
+          "ci_low": -0.035055809596087784,
+          "ci_high": -0.0036268942581955395
+        },
+        {
+          "block": 25,
+          "contrast": -0.009786892682313919,
+          "ci_low": -0.022975646081613378,
+          "ci_high": 0.0048106972972163774
+        },
+        {
+          "block": 26,
+          "contrast": -0.010630197823047638,
+          "ci_low": -0.02608604689594358,
+          "ci_high": 0.005727026599925002
+        },
+        {
+          "block": 27,
+          "contrast": -0.01141933724284172,
+          "ci_low": -0.028422809776384384,
+          "ci_high": 0.006501606045640072
+        },
+        {
+          "block": 28,
+          "contrast": -0.011030841618776321,
+          "ci_low": -0.028813974247896113,
+          "ci_high": 0.00802747237612493
+        },
+        {
+          "block": 29,
+          "contrast": -0.012755818665027618,
+          "ci_low": -0.030134230287512765,
+          "ci_high": 0.004317527133389359
+        },
+        {
+          "block": 30,
+          "contrast": -0.0072485096752643585,
+          "ci_low": -0.021159006284142377,
+          "ci_high": 0.0054926429947954455
+        },
+        {
+          "block": 31,
+          "contrast": -0.006812993437051773,
+          "ci_low": -0.01716147390543483,
+          "ci_high": 0.0024425350129604314
+        },
+        {
+          "block": 32,
+          "contrast": -0.004812199622392654,
+          "ci_low": -0.013953360146842897,
+          "ci_high": 0.0034625278050952955
+        },
+        {
+          "block": 33,
+          "contrast": -0.0013942308723926544,
+          "ci_low": -0.007361601485172287,
+          "ci_high": 0.00489748231630073
+        },
+        {
+          "block": 34,
+          "contrast": -0.002311086282134056,
+          "ci_low": -0.006986117133055814,
+          "ci_high": 0.003060295148316072
+        },
+        {
+          "block": 35,
+          "contrast": 0.0003628227859735489,
+          "ci_low": -0.0032008884103561287,
+          "ci_high": 0.0038536175990884648
+        },
+        {
+          "block": 36,
+          "contrast": 0.020371153950691223,
+          "ci_low": 0.0048764431150630115,
+          "ci_high": 0.03405967071885243
         }
       ]
     },
@@ -1442,12 +1890,278 @@
           "ci_high": 0.017285252921283245
         }
       ]
+    },
+    {
+      "model": "google/gemma-2-9b-it",
+      "source_policy": "transparency",
+      "target_policy": "evidence_contract",
+      "metric": "either",
+      "blocks": 42,
+      "matched_case_n": 4,
+      "matched_unique_control_n": 8,
+      "unmatched_case_n": 4,
+      "disappeared_n": 8,
+      "excluded_n": 5,
+      "rows": [
+        {
+          "block": 1,
+          "contrast": -9.501973181613721e-06,
+          "ci_low": -1.608766674507933e-05,
+          "ci_high": -2.9840823117410825e-06
+        },
+        {
+          "block": 2,
+          "contrast": 1.0152660252060741e-05,
+          "ci_low": -2.1882723194721622e-05,
+          "ci_high": 4.1157007217407227e-05
+        },
+        {
+          "block": 3,
+          "contrast": 1.6580022929701954e-05,
+          "ci_low": -2.569707612565253e-06,
+          "ci_high": 3.5425029636826366e-05
+        },
+        {
+          "block": 4,
+          "contrast": 2.6901558157987893e-05,
+          "ci_low": 3.159046173095703e-06,
+          "ci_high": 5.064407014288008e-05
+        },
+        {
+          "block": 5,
+          "contrast": -1.9788742065429688e-05,
+          "ci_low": -0.000145634263753891,
+          "ci_high": 0.00010107381240231903
+        },
+        {
+          "block": 6,
+          "contrast": -8.500117110088468e-05,
+          "ci_low": -0.0002621496532810852,
+          "ci_high": 8.580111607443462e-05
+        },
+        {
+          "block": 7,
+          "contrast": -0.00014694035053253174,
+          "ci_low": -0.0003569771652109921,
+          "ci_high": 6.0016929637640715e-05
+        },
+        {
+          "block": 8,
+          "contrast": 0.0007748504867777228,
+          "ci_low": 0.0006227245321497321,
+          "ci_high": 0.0009348664432764052
+        },
+        {
+          "block": 9,
+          "contrast": 0.001469264505431056,
+          "ci_low": 0.000734149239724502,
+          "ci_high": 0.0021970767993479967
+        },
+        {
+          "block": 10,
+          "contrast": 0.0017087263986468315,
+          "ci_low": 0.0005165297538042068,
+          "ci_high": 0.00288634980097413
+        },
+        {
+          "block": 11,
+          "contrast": 0.0012628138065338135,
+          "ci_low": 0.00027219317853450776,
+          "ci_high": 0.002236181870102882
+        },
+        {
+          "block": 12,
+          "contrast": 0.0012768902815878391,
+          "ci_low": 0.0004770187078975141,
+          "ci_high": 0.00201867560390383
+        },
+        {
+          "block": 13,
+          "contrast": 0.0018398165702819824,
+          "ci_low": 0.0008552153594791889,
+          "ci_high": 0.00267021000618115
+        },
+        {
+          "block": 14,
+          "contrast": 0.0023034708574414253,
+          "ci_low": 0.0011081119417212903,
+          "ci_high": 0.0033597762580029663
+        },
+        {
+          "block": 15,
+          "contrast": 0.0019273506477475166,
+          "ci_low": 0.0005999603308737278,
+          "ci_high": 0.003120922204107045
+        },
+        {
+          "block": 16,
+          "contrast": 0.0016457336023449898,
+          "ci_low": 0.0001332564279437065,
+          "ci_high": 0.003079184517264365
+        },
+        {
+          "block": 17,
+          "contrast": 0.0010012388229370117,
+          "ci_low": -0.00042925775051116943,
+          "ci_high": 0.0024336419301107526
+        },
+        {
+          "block": 18,
+          "contrast": 0.0008343858644366264,
+          "ci_low": -0.0008527091704308987,
+          "ci_high": 0.0025094421929679803
+        },
+        {
+          "block": 19,
+          "contrast": 0.001395334955304861,
+          "ci_low": -0.0017028502188622952,
+          "ci_high": 0.004431987681891767
+        },
+        {
+          "block": 20,
+          "contrast": 0.0009587109088897705,
+          "ci_low": -0.0019279051339253783,
+          "ci_high": 0.00381538737565279
+        },
+        {
+          "block": 21,
+          "contrast": 0.0009090900421142578,
+          "ci_low": -0.0036980926292017103,
+          "ci_high": 0.005509138107299805
+        },
+        {
+          "block": 22,
+          "contrast": -0.0008793426677584648,
+          "ci_low": -0.0062026303261518475,
+          "ci_high": 0.005163240432739256
+        },
+        {
+          "block": 23,
+          "contrast": 0.0004047062247991562,
+          "ci_low": -0.0056190043687820435,
+          "ci_high": 0.006395002827048302
+        },
+        {
+          "block": 24,
+          "contrast": -0.0057573821395635605,
+          "ci_low": -0.011528227711096406,
+          "ci_high": -1.1478969827296222e-05
+        },
+        {
+          "block": 25,
+          "contrast": -0.012165114283561707,
+          "ci_low": -0.019284021109342575,
+          "ci_high": -0.005247000604867935
+        },
+        {
+          "block": 26,
+          "contrast": -0.01689569652080536,
+          "ci_low": -0.024942263960838318,
+          "ci_high": -0.008520632982254028
+        },
+        {
+          "block": 27,
+          "contrast": -0.029992815107107162,
+          "ci_low": -0.041264330688863995,
+          "ci_high": -0.018456287682056427
+        },
+        {
+          "block": 28,
+          "contrast": -0.03133454546332359,
+          "ci_low": -0.0398552268743515,
+          "ci_high": -0.022441420471295714
+        },
+        {
+          "block": 29,
+          "contrast": -0.04180135577917099,
+          "ci_low": -0.055038291960954666,
+          "ci_high": -0.027914658840745694
+        },
+        {
+          "block": 30,
+          "contrast": -0.03628167510032654,
+          "ci_low": -0.04766521975398064,
+          "ci_high": -0.024243914429098373
+        },
+        {
+          "block": 31,
+          "contrast": -0.0346732959151268,
+          "ci_low": -0.04654305428266525,
+          "ci_high": -0.022815022617578506
+        },
+        {
+          "block": 32,
+          "contrast": -0.03214287385344505,
+          "ci_low": -0.04412616910412907,
+          "ci_high": -0.020076721720397473
+        },
+        {
+          "block": 33,
+          "contrast": -0.027057021856307983,
+          "ci_low": -0.04001319035887718,
+          "ci_high": -0.013883590698242188
+        },
+        {
+          "block": 34,
+          "contrast": -0.028017476201057434,
+          "ci_low": -0.047609304543584585,
+          "ci_high": -0.008425644226372256
+        },
+        {
+          "block": 35,
+          "contrast": -0.028262261301279068,
+          "ci_low": -0.04828363787382841,
+          "ci_high": -0.00800282061100009
+        },
+        {
+          "block": 36,
+          "contrast": -0.0194067545235157,
+          "ci_low": -0.038174767047166824,
+          "ci_high": -0.0005899611860513729
+        },
+        {
+          "block": 37,
+          "contrast": -0.02963535115122795,
+          "ci_low": -0.041584047675132754,
+          "ci_high": -0.017688360065221786
+        },
+        {
+          "block": 38,
+          "contrast": -0.036578115075826645,
+          "ci_low": -0.046829815953969955,
+          "ci_high": -0.026326391845941544
+        },
+        {
+          "block": 39,
+          "contrast": -0.025215808302164078,
+          "ci_low": -0.04025329714640975,
+          "ci_high": -0.01083122193813324
+        },
+        {
+          "block": 40,
+          "contrast": -0.026102177798748016,
+          "ci_low": -0.03662984073162079,
+          "ci_high": -0.01614466682076454
+        },
+        {
+          "block": 41,
+          "contrast": -0.016324207186698914,
+          "ci_low": -0.02436538292095065,
+          "ci_high": -0.008382480125874281
+        },
+        {
+          "block": 42,
+          "contrast": -0.007016725838184357,
+          "ci_low": -0.01894548162817955,
+          "ci_high": 0.005598738789558411
+        }
+      ]
     }
   ],
   "output": {
-    "path": "results/internal_states_combined.png",
-    "sha256": "3f51a59dc036824f8094fbc600c3659ef4a7cb36cafa5bb30c0ab5f6cb6e2961",
-    "bytes": 178302
+    "path": "results/internal_states_all.png",
+    "sha256": "187cf9ca2e4806d40121582c7a649170121fad25dbd98f11bae43b7c974a05d8",
+    "bytes": 228729
   },
-  "rendering_source": "\"\"\"Render the already-saved combined-error rows; no analysis or scoring.\"\"\"\nimport csv\nimport hashlib\nimport json\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nimport matplotlib\nmatplotlib.use('Agg')\nimport matplotlib.pyplot as plt\nfrom matplotlib.ticker import MaxNLocator, MultipleLocator\n\nROOT=Path('/Users/samirajahangiri/failure-reporting-study')\nSOURCE=ROOT/'results/internal_states.csv'\nOUTPUT=ROOT/'results/internal_states_combined.png'\nPROVENANCE=OUTPUT.with_suffix('.json')\nsha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()\npreserved={p:sha(p) for p in [SOURCE,ROOT/'results/internal_states.png',ROOT/'results/internal_states.json',ROOT/'results/answers.jsonl',ROOT/'results/labels.jsonl']}\nif OUTPUT.exists() or PROVENANCE.exists():\n    previous=json.loads(PROVENANCE.read_text())\n    assert sha(OUTPUT)==previous['output']['sha256'], 'Existing rendering changed outside its saved record'\n    assert sha(SOURCE)==previous['source_csv_sha256'], 'Saved numerical source changed'\nwith SOURCE.open(newline='') as f:\n    rows=list(csv.DictReader(f))\nmodels=[('mistralai/Ministral-3-8B-Instruct-2512','Ministral',34),('Qwen/Qwen3-8B','Qwen',36),('google/gemma-2-9b-it','Gemma',42)]\npairs=[('baseline','evidence_contract','Baseline → evidence contract'),('baseline','transparency','Baseline → transparency')]\npanels=[]\nwith plt.rc_context({'font.family':'DejaVu Sans','font.size':11,'axes.spines.top':False,'axes.spines.right':False}):\n    fig,axes=plt.subplots(3,2,figsize=(8.2,6.9),sharex='row',sharey='row')\n    fig.subplots_adjust(left=.19,right=.985,bottom=.105,top=.94,hspace=.28,wspace=.12)\n    for i,(model,name,blocks) in enumerate(models):\n        for j,(source,target,title) in enumerate(pairs):\n            selected=sorted((r for r in rows if r['model']==model and r['metric']=='either' and r['source_policy']==source and r['target_policy']==target),key=lambda r:int(r['decoder_block']))\n            assert [int(r['decoder_block']) for r in selected]==list(range(1,blocks+1))\n            x=[int(r['decoder_block']) for r in selected]\n            y=[float(r['contrast']) for r in selected]\n            low=[float(r['ci_low']) for r in selected]\n            high=[float(r['ci_high']) for r in selected]\n            ax=axes[i,j]\n            ax.fill_between(x,low,high,color='#7555a2',alpha=.16,linewidth=0)\n            ax.plot(x,y,color='#7555a2',linewidth=1.8)\n            ax.axhline(0,color='#87919a',linewidth=.8,zorder=0)\n            ax.set_xlim(0,blocks)\n            ax.xaxis.set_major_locator(MultipleLocator(10))\n            ax.yaxis.set_major_locator(MaxNLocator(nbins=4))\n            ax.tick_params(axis='both',labelsize=10,length=3)\n            if j:\n                ax.tick_params(axis='y',left=False,labelleft=False)\n                ax.spines['left'].set_visible(False)\n            if i==0:\n                ax.set_title(title,fontsize=13,pad=10)\n            panels.append({'model':model,'source_policy':source,'target_policy':target,'metric':'either','blocks':blocks,\n                **{k:int(selected[0][k]) for k in ['matched_case_n','matched_unique_control_n','unmatched_case_n','disappeared_n','excluded_n']},\n                'rows':[{'block':b,'contrast':v,'ci_low':l,'ci_high':h} for b,v,l,h in zip(x,y,low,high)]})\n        position=axes[i,0].get_position()\n        fig.text(.095,(position.y0+position.y1)/2,name,ha='center',va='center',fontsize=12)\n    fig.supxlabel('Transformer block',fontsize=13,y=.025)\n    fig.supylabel('State-change difference (corrected − already-clean)',fontsize=13,x=.015)\n    fig.savefig(OUTPUT,dpi=220,facecolor='white')\n    plt.close(fig)\nfor path,expected in preserved.items():\n    assert sha(path)==expected,path\nmetadata={'purpose':'Requested minimal re-render of existing combined-error results only','created_at':datetime.now(timezone.utc).isoformat(),\n    'source_csv':str(SOURCE.relative_to(ROOT)),'source_csv_sha256':preserved[SOURCE],\n    'original_figure_preserved':True,'original_figure_sha256':preserved[ROOT/'results/internal_states.png'],\n    'combined_metric':'OR(false_success, fabricated_details), with both labels resolved at both endpoints; not an average of the old curves',\n    'cases':'Any of the two unsupported-claim flags initially true, both false afterward; exact category × pressure matching to controls clean under both policies',\n    'y_axis':'Saved matched mean cosine-distance contrast: case policy-change distance minus case-weighted same-cell control distance',\n    'shading':'Original saved descriptive 95% within-cell bootstrap intervals, unchanged; not recalculated',\n    'scope':'Includes only the two measured unsupported-claim flags, not every possible mistake. Cohorts differ across models and policy pairs.',\n    'new_model_forwards':0,'new_answers':0,'new_scoring':0,'new_bootstrap':0,\n    'panels':panels,'output':{'path':str(OUTPUT.relative_to(ROOT)),'sha256':sha(OUTPUT),'bytes':OUTPUT.stat().st_size},\n    'rendering_source':Path(__file__).read_text()}\nPROVENANCE.write_text(json.dumps(metadata,indent=2,ensure_ascii=False)+'\\n')\nprint(json.dumps({'figure':str(OUTPUT),'bytes':OUTPUT.stat().st_size,'panels':[{k:p[k] for k in ['model','target_policy','matched_case_n','matched_unique_control_n']} for p in panels],'old_files_unchanged':True}))\n"
+  "rendering_source": "\"\"\"Render the already-saved combined-error rows; no analysis or scoring.\"\"\"\nimport csv\nimport hashlib\nimport json\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nimport matplotlib\nmatplotlib.use('Agg')\nimport matplotlib.pyplot as plt\nfrom matplotlib.ticker import MaxNLocator, MultipleLocator\n\nROOT=Path('/Users/samirajahangiri/failure-reporting-study')\nSOURCE=ROOT/'results/internal_states.csv'\nOUTPUT=ROOT/'results/internal_states_all.png'\nPROVENANCE=OUTPUT.with_suffix('.json')\nsha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()\npreserved={p:sha(p) for p in [SOURCE,ROOT/'results/internal_states.png',ROOT/'results/internal_states.json',ROOT/'results/answers.jsonl',ROOT/'results/labels.jsonl']}\nif OUTPUT.exists() or PROVENANCE.exists():\n    previous=json.loads(PROVENANCE.read_text())\n    assert sha(OUTPUT)==previous['output']['sha256'], 'Existing rendering changed outside its saved record'\n    assert sha(SOURCE)==previous['source_csv_sha256'], 'Saved numerical source changed'\nwith SOURCE.open(newline='') as f:\n    rows=list(csv.DictReader(f))\nmodels=[('mistralai/Ministral-3-8B-Instruct-2512','Ministral',34),('Qwen/Qwen3-8B','Qwen',36),('google/gemma-2-9b-it','Gemma',42)]\npairs=[('baseline','evidence_contract','Baseline → evidence contract'),('baseline','transparency','Baseline → transparency'),('transparency','evidence_contract','Transparency → evidence contract')]\npanels=[]\nwith plt.rc_context({'font.family':'DejaVu Sans','font.size':11,'axes.spines.top':False,'axes.spines.right':False}):\n    fig,axes=plt.subplots(3,3,figsize=(11.5,6.9),sharex='row',sharey='row')\n    fig.subplots_adjust(left=.15,right=.99,bottom=.105,top=.94,hspace=.28,wspace=.12)\n    for i,(model,name,blocks) in enumerate(models):\n        for j,(source,target,title) in enumerate(pairs):\n            selected=sorted((r for r in rows if r['model']==model and r['metric']=='either' and r['source_policy']==source and r['target_policy']==target),key=lambda r:int(r['decoder_block']))\n            assert [int(r['decoder_block']) for r in selected]==list(range(1,blocks+1))\n            x=[int(r['decoder_block']) for r in selected]\n            y=[float(r['contrast']) for r in selected]\n            low=[float(r['ci_low']) for r in selected]\n            high=[float(r['ci_high']) for r in selected]\n            ax=axes[i,j]\n            ax.fill_between(x,low,high,color='#7555a2',alpha=.16,linewidth=0)\n            ax.plot(x,y,color='#7555a2',linewidth=1.8)\n            ax.axhline(0,color='#87919a',linewidth=.8,zorder=0)\n            ax.set_xlim(0,blocks)\n            ax.xaxis.set_major_locator(MultipleLocator(10))\n            ax.yaxis.set_major_locator(MaxNLocator(nbins=4))\n            ax.tick_params(axis='both',labelsize=10,length=3)\n            if j:\n                ax.tick_params(axis='y',left=False,labelleft=False)\n                ax.spines['left'].set_visible(False)\n            if i==0:\n                ax.set_title(title,fontsize=13,pad=10)\n            panels.append({'model':model,'source_policy':source,'target_policy':target,'metric':'either','blocks':blocks,\n                **{k:int(selected[0][k]) for k in ['matched_case_n','matched_unique_control_n','unmatched_case_n','disappeared_n','excluded_n']},\n                'rows':[{'block':b,'contrast':v,'ci_low':l,'ci_high':h} for b,v,l,h in zip(x,y,low,high)]})\n        position=axes[i,0].get_position()\n        fig.text(.07,(position.y0+position.y1)/2,name,ha='center',va='center',fontsize=12)\n    fig.supxlabel('Transformer block',fontsize=13,y=.025)\n    fig.supylabel('State-change difference (corrected − already-clean)',fontsize=13,x=.015)\n    fig.savefig(OUTPUT,dpi=220,facecolor='white')\n    plt.close(fig)\nfor path,expected in preserved.items():\n    assert sha(path)==expected,path\nmetadata={'purpose':'Requested all-three-policy-pairs rendering of existing combined-error results; renamed from internal_states_combined','created_at':datetime.now(timezone.utc).isoformat(),\n    'source_csv':str(SOURCE.relative_to(ROOT)),'source_csv_sha256':preserved[SOURCE],\n    'original_figure_preserved':True,'original_figure_sha256':preserved[ROOT/'results/internal_states.png'],\n    'combined_metric':'OR(false_success, fabricated_details), with both labels resolved at both endpoints; not an average of the old curves',\n    'cases':'Any of the two unsupported-claim flags initially true, both false afterward; exact category × pressure matching to controls clean under both policies',\n    'y_axis':'Saved matched mean cosine-distance contrast: case policy-change distance minus case-weighted same-cell control distance',\n    'shading':'Original saved descriptive 95% within-cell bootstrap intervals, unchanged; not recalculated',\n    'scope':'Includes only the two measured unsupported-claim flags, not every possible mistake. Cohorts differ across models and policy pairs.',\n    'new_model_forwards':0,'new_answers':0,'new_scoring':0,'new_bootstrap':0,\n    'panels':panels,'output':{'path':str(OUTPUT.relative_to(ROOT)),'sha256':sha(OUTPUT),'bytes':OUTPUT.stat().st_size},\n    'rendering_source':Path(__file__).read_text()}\nPROVENANCE.write_text(json.dumps(metadata,indent=2,ensure_ascii=False)+'\\n')\nprint(json.dumps({'figure':str(OUTPUT),'bytes':OUTPUT.stat().st_size,'panels':[{k:p[k] for k in ['model','target_policy','matched_case_n','matched_unique_control_n']} for p in panels],'old_files_unchanged':True}))\n"
 }
