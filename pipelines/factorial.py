@@ -2206,11 +2206,18 @@ def evaluate_prediction(records, states, settings, folds, output_dir):
     return json.loads(json.dumps(summary, default=_prediction_json_value))
 
 
-def prediction_verify_sources(root, plan):
+def prediction_verify_sources(root, plan, allow_missing_unrelated=False):
     """Mechanical saved-label/eligibility joins; never review answer semantics."""
     root = Path(root)
     for group in ('source_sha256', 'preserved_files_sha256'):
         for name, expected in plan[group].items():
+            if (allow_missing_unrelated and group=='preserved_files_sha256'
+                    and name not in plan['source_sha256'] and not (root/name).exists()):
+                # Newton need not contain unrelated publication-only metadata.
+                # All required sources and all existing preserved files remain checked;
+                # final local analysis requires the complete preserved snapshot.
+                print('LOCAL_PUBLICATION_ONLY_SOURCE_NOT_PRESENT',name,flush=True)
+                continue
             if sha256_file(root/name) != expected:
                 raise ValueError('Preserved prediction source changed: '+name)
     if (plan['seed'] != 20261022 or plan['model_key'] != 'ministral3_8b'
@@ -2331,7 +2338,7 @@ def main():
     if args.command.startswith('prediction-'):
         if not args.cache_dir:parser.error(args.command+' requires external --cache-dir')
         plan=read_json(plan_path)
-        prediction_verify_sources(root,plan)
+        prediction_verify_sources(root,plan,allow_missing_unrelated=args.command=='prediction-extract')
         if args.command=='prediction-extract':
             with (args.cache_dir.parent/'.fta_prediction_extraction.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
