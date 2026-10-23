@@ -10,19 +10,19 @@
     "internal_states": {
       "titles": [
         13,
-        16
+        19
       ],
       "models": [
         12,
-        15
+        18
       ],
       "axes": [
         13,
-        16
+        19
       ],
       "ticks": [
         10,
-        15
+        18
       ]
     },
     "summary": {
@@ -46,19 +46,19 @@
     "pca": {
       "legend": [
         10,
-        13
+        16
       ],
       "titles": [
         11,
-        16
+        19
       ],
       "axes": [
         9,
-        14
+        17
       ],
       "ticks": [
         7,
-        12
+        15
       ]
     },
     "workflow": {
@@ -140,8 +140,8 @@
       }
     ],
     "font": "Times New Roman",
-    "word_font_increase_pt": 3,
-    "number_font_increase_pt": 5,
+    "word_font_increase_pt": 6,
+    "number_font_increase_pt": 8,
     "new_analysis": false
   },
   "summary": {
@@ -164,12 +164,12 @@
   },
   "outputs": {
     "internal_states_all.png": {
-      "sha256": "e0cf6de823146b3da2e72444f379e434b318e0a63208cc1e2c053aca15edd822",
-      "bytes": 252625
+      "sha256": "8370c6d237cf1606a8b5b047cb8c6cf0042386d761d03bf2a3404bed1cfa8cce",
+      "bytes": 277848
     },
     "pca_focused.png": {
-      "sha256": "7372fc894cb71b2db3be642d49ffe1312017f4fe860e9e910809a1335f4f8878",
-      "bytes": 617632
+      "sha256": "9bc92c7b6fbbabf6f60ab0c14641a31b5ced8e32e3abe70556d3aded1f17462a",
+      "bytes": 646042
     },
     "summary_combined.png": {
       "sha256": "9a8f6e436d6c5647924a55f723e00562ea3b405f46215ae9f534eefdbb6fea41",
@@ -183,5 +183,9 @@
       "sha256": "3640559cbaadc7016e20242a4eedf33459f6e761069065cfd1531c8fd38801d6",
       "bytes": 408799
     }
+  },
+  "additional_enlargement_pt": {
+    "internal_states_all.png": 3,
+    "pca_focused.png": 3
   }
 }

@@ -371,11 +371,11 @@ def render_internal_states_paper(root, output):
         ('transparency', 'evidence_contract', 'Transparency → evidence contract'),
     ]
     panels = {(p['model'], p['source_policy'], p['target_policy']): p for p in saved['panels']}
-    with plt.rc_context({'font.family': 'Times New Roman', 'font.size': 14,
+    with plt.rc_context({'font.family': 'Times New Roman', 'font.size': 17,
                          'axes.spines.top': False, 'axes.spines.right': False,
                          'pdf.fonttype': 42, 'ps.fonttype': 42}):
-        fig, axes = plt.subplots(3, 3, figsize=(11.5, 6.9), sharex='row', sharey='row')
-        fig.subplots_adjust(left=.18, right=.96, bottom=.11, top=.93, hspace=.28, wspace=.22)
+        fig, axes = plt.subplots(3, 3, figsize=(12.1, 6.9), sharex='row', sharey='row')
+        fig.subplots_adjust(left=.18, right=.945, bottom=.11, top=.93, hspace=.28, wspace=.22)
         for i, model in enumerate(models):
             for j, (source, target, title) in enumerate(pairs):
                 panel = panels[(model, source, target)]
@@ -390,17 +390,17 @@ def render_internal_states_paper(root, output):
                 ax.set_xlim(0, panel['blocks'])
                 ax.xaxis.set_major_locator(MultipleLocator(10))
                 ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
-                ax.tick_params(axis='both', labelsize=15, length=3)
+                ax.tick_params(axis='both', labelsize=18, length=3)
                 if j:
                     ax.tick_params(axis='y', left=False, labelleft=False)
                     ax.spines['left'].set_visible(False)
                 if i == 0:
-                    ax.set_title(title, fontsize=16, pad=10)
+                    ax.set_title(title, fontsize=19, pad=10)
             position = axes[i, 0].get_position()
             fig.text(.075, (position.y0 + position.y1) / 2, names[model],
-                     ha='center', va='center', fontsize=15)
-        fig.supxlabel('Transformer block', fontsize=16, y=.02)
-        fig.supylabel('State-change difference (corrected − already-clean)', fontsize=16, x=.012)
+                     ha='center', va='center', fontsize=18)
+        fig.supxlabel('Transformer block', fontsize=19, y=.02)
+        fig.supylabel('State-change difference (corrected − already-clean)', fontsize=19, x=.012)
         fig.canvas.draw()
         renderer = fig.canvas.get_renderer()
         for title in (axis.title for axis in axes[0]):
@@ -413,7 +413,7 @@ def render_internal_states_paper(root, output):
         plt.close(fig)
     return {'source': 'results/internal_states_all.json:panels', 'panel_n': len(panels),
             'model_order': models, 'axis_limits': limits,
-            'font': 'Times New Roman', 'word_font_increase_pt': 3, 'number_font_increase_pt': 5,
+            'font': 'Times New Roman', 'word_font_increase_pt': 6, 'number_font_increase_pt': 8,
             'new_analysis': False}
 
 
@@ -500,9 +500,9 @@ def paper_figures(root: Path, output_dir: Path | None = None):
         "font_family": "Times New Roman", "resolved_font": font,
         "minimum_increase_pt": {"words": 3, "numbers": 5},
         "font_sizes_pt": {
-            "internal_states": {"titles": [13, 16], "models": [12, 15], "axes": [13, 16], "ticks": [10, 15]},
+            "internal_states": {"titles": [13, 19], "models": [12, 18], "axes": [13, 19], "ticks": [10, 18]},
             "summary": {"models_and_axis": [12, 15], "legend": [11, 14], "ticks": [12, 17], "percentages": [11, 16]},
-            "pca": {"legend": [10, 13], "titles": [11, 16], "axes": [9, 14], "ticks": [7, 12]},
+            "pca": {"legend": [10, 16], "titles": [11, 19], "axes": [9, 17], "ticks": [7, 15]},
             "workflow": {"nodes_and_titles": [14, 17], "unboxed_notes": [12, 15], "models": [12, 17], "input": [16, 21]}},
         "source_sha256": preserved, "saved_sources_unchanged": True,
         "new_answers": 0, "new_scoring": 0, "state_cache_reads": 0, "PCA_refits": 0,
