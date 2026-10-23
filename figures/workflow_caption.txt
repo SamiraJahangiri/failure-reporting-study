@@ -2,7 +2,7 @@ Figure caption
 
 Study overview using the tasks, supplied failure observations, and original three reporting policies of Zhu et al. Tasks and observations stay fixed; no live tools or recovery actions are executed. (a) Reporting errors are unsupported success claims (completion without tool evidence) or invented details (unsupported requested or auxiliary facts). (b) Exploratory before-answer states support layerwise comparisons and final-block PCA under the same three instructions. (c) Four alternative instructions test an evidence rule requiring supported claims and headings that organize the response.
 
-Citation note: Use the existing Zhu et al. bibliography entry in paper.tex; its key cannot be confirmed without the manuscript.
+Citation note: The manuscript uses the existing Zhu et al. entry with key zhu2026.
 
 Method notes
 Labels are Codex-assisted AI judgments, not independent human annotations. States are reconstructed without answer text and recorded before final normalization. Layerwise reference cases are matched on failure category and pressure type. PCA uses one fit per model, pooling all eligible three-policy task triplets after per-vector L2 normalization, with no control subtraction. Final blocks are Qwen 36, Gemma 42, and Ministral 34. Its focused view follows fixed W-W-C and C-C-C task groups; W means either saved error flag and C means neither, not guaranteed correctness. State shifts and projected distances are descriptive associations, not a causal mechanism. The factorial experiment holds tasks and observations fixed; R is the evidence rule and S is the four-heading structure. Its combined prompt is not an exact reconstruction of the original evidence contract, and the headings carry evidence-related meaning.

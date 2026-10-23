@@ -1,0 +1,187 @@
+{
+  "purpose": "Font-only paper exports from saved numerical plot records",
+  "font_family": "Times New Roman",
+  "resolved_font": "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+  "minimum_increase_pt": {
+    "words": 3,
+    "numbers": 5
+  },
+  "font_sizes_pt": {
+    "internal_states": {
+      "titles": [
+        13,
+        16
+      ],
+      "models": [
+        12,
+        15
+      ],
+      "axes": [
+        13,
+        16
+      ],
+      "ticks": [
+        10,
+        15
+      ]
+    },
+    "summary": {
+      "models_and_axis": [
+        12,
+        15
+      ],
+      "legend": [
+        11,
+        14
+      ],
+      "ticks": [
+        12,
+        17
+      ],
+      "percentages": [
+        11,
+        16
+      ]
+    },
+    "pca": {
+      "legend": [
+        10,
+        13
+      ],
+      "titles": [
+        11,
+        16
+      ],
+      "axes": [
+        9,
+        14
+      ],
+      "ticks": [
+        7,
+        12
+      ]
+    },
+    "workflow": {
+      "nodes_and_titles": [
+        14,
+        17
+      ],
+      "unboxed_notes": [
+        12,
+        15
+      ],
+      "models": [
+        12,
+        17
+      ],
+      "input": [
+        16,
+        21
+      ]
+    }
+  },
+  "source_sha256": {
+    "results/internal_states_all.json": "a3a0dbd7bebf516e1c926cb8b5ccfd2664a8771de2915aa1c84505a90da9be87",
+    "results/summary_combined.json": "8d4fde53bdf2773e040a24d0abc18a1bcf8681c85821a372d9f30e05549a05ef",
+    "results/pca.html": "5e691781a0101080698c6a7c4e9571539025dc02774c444629ba4f5bd9da46a4",
+    "results/pca.json": "aa3c4884f000b145d9376df1da60c04a9f0c9fb434b6e9cae39a084342abf99d",
+    "results/pca.csv": "1e1fc1859a169b4e8ae38c54aad700f77e523984071f3565e9d5f635affea0cb",
+    "results/internal_states.csv": "0286a2ec4b149de9b989d45a118b7e6304c9b7953a84915a68541aa0256c03b2",
+    "results/answers.jsonl": "83f3be86d71e266e7ee59d00fe448b5fa3142dfac9269f3ee5cb438a7fd5b7eb",
+    "results/labels.jsonl": "9ffad438aee5534804821fb631f1baf81b5688decb610b45061536aabdc5a8fa",
+    "data/model_inputs.jsonl": "4ed6997e6b16e29e13afb19f1125ae744bacf4df878f463a35cb6a2dbf3ea7e7"
+  },
+  "saved_sources_unchanged": true,
+  "new_answers": 0,
+  "new_scoring": 0,
+  "state_cache_reads": 0,
+  "PCA_refits": 0,
+  "internal_states": {
+    "source": "results/internal_states_all.json:panels",
+    "panel_n": 9,
+    "model_order": [
+      "mistralai/Ministral-3-8B-Instruct-2512",
+      "Qwen/Qwen3-8B",
+      "google/gemma-2-9b-it"
+    ],
+    "axis_limits": [
+      {
+        "model": "mistralai/Ministral-3-8B-Instruct-2512",
+        "xlim": [
+          0.0,
+          34.0
+        ],
+        "ylim": [
+          -0.05168620329749501,
+          0.01652140839959429
+        ]
+      },
+      {
+        "model": "Qwen/Qwen3-8B",
+        "xlim": [
+          0.0,
+          36.0
+        ],
+        "ylim": [
+          -0.03894733919121791,
+          0.03753619500028435
+        ]
+      },
+      {
+        "model": "google/gemma-2-9b-it",
+        "xlim": [
+          0.0,
+          42.0
+        ],
+        "ylim": [
+          -0.05894411746412516,
+          0.02698404360562563
+        ]
+      }
+    ],
+    "font": "Times New Roman",
+    "word_font_increase_pt": 3,
+    "number_font_increase_pt": 5,
+    "new_analysis": false
+  },
+  "summary": {
+    "source": "results/summary_combined.json:counts",
+    "bar_n": 9,
+    "model_order": [
+      "mistralai/Ministral-3-8B-Instruct-2512",
+      "Qwen/Qwen3-8B",
+      "google/gemma-2-9b-it"
+    ],
+    "policy_order": [
+      "baseline",
+      "transparency",
+      "evidence_contract"
+    ],
+    "font": "Times New Roman",
+    "word_font_increase_pt": 3,
+    "number_font_increase_pt": 5,
+    "new_analysis": false
+  },
+  "outputs": {
+    "internal_states_all.png": {
+      "sha256": "e0cf6de823146b3da2e72444f379e434b318e0a63208cc1e2c053aca15edd822",
+      "bytes": 252625
+    },
+    "pca_focused.png": {
+      "sha256": "7372fc894cb71b2db3be642d49ffe1312017f4fe860e9e910809a1335f4f8878",
+      "bytes": 617632
+    },
+    "summary_combined.png": {
+      "sha256": "9a8f6e436d6c5647924a55f723e00562ea3b405f46215ae9f534eefdbb6fea41",
+      "bytes": 79108
+    },
+    "workflow.pdf": {
+      "sha256": "7c13446be7898c2be6c9f37de519cb826aab9c58aa6bf52b617fca245e72d6da",
+      "bytes": 57030
+    },
+    "workflow.png": {
+      "sha256": "3640559cbaadc7016e20242a4eedf33459f6e761069065cfd1531c8fd38801d6",
+      "bytes": 408799
+    }
+  }
+}

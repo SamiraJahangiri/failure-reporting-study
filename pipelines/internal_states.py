@@ -2680,7 +2680,7 @@ def pca_visualize(root, cache_dir, projection_cache_dir, output_prefix):
 
 
 
-def pca_focused_figure(payload, output):
+def pca_focused_figure(payload, output, *, large_times=False):
     """Draw two fixed task groups at their unchanged full-data PCA coordinates."""
     import matplotlib
     matplotlib.use("Agg")
@@ -2689,8 +2689,9 @@ def pca_focused_figure(payload, output):
 
     colors = {"baseline": "#4c78a8", "transparency": "#1b9e77", "evidence_contract": "#e69f00"}
     groups = (("C-C-C", "o", "--", .13), ("W-W-C", "^", "-", .52))
-    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 9}):
-        figure = plt.figure(figsize=(15, 5.2))
+    with plt.rc_context({"font.family": "Times New Roman" if large_times else "DejaVu Sans",
+                         "font.size": 12 if large_times else 9}):
+        figure = plt.figure(figsize=(16.6, 6.2) if large_times else (15, 5.2))
         for index, model in enumerate(payload["models"]):
             ax = figure.add_subplot(1, 3, index+1, projection="3d")
             tasks = {}
@@ -2716,10 +2717,15 @@ def pca_focused_figure(payload, output):
             labels = [f"PC{i+1} ({100*v:.1f}%)" for i, v in enumerate(model["explained_variance_ratio"])]
             ax.set(xlabel=labels[0], ylabel=labels[1], zlabel="",
                    xlim=model["axis_range"], ylim=model["axis_range"], zlim=model["axis_range"])
+            if large_times:
+                ax.xaxis.label.set_size(14)
+                ax.yaxis.label.set_size(14)
+                ax.xaxis.labelpad = 9
+                ax.yaxis.labelpad = 9
             ax.set_box_aspect((1, 1, 1))
             ax.view_init(elev=22, azim=40)
-            ax.tick_params(labelsize=7, pad=0)
-            ax.set_title(model["name"] + f" · 3 PCs: {100*sum(model['explained_variance_ratio']):.1f}%", fontsize=11, pad=7)
+            ax.tick_params(labelsize=12 if large_times else 7, pad=0)
+            ax.set_title(model["name"] + f" · 3 PCs: {100*sum(model['explained_variance_ratio']):.1f}%", fontsize=16 if large_times else 11, pad=7)
         handles = [Line2D([], [], color=color, lw=3, label=policy.replace("_", " ").capitalize())
                    for policy, color in colors.items()]
         handles += [Line2D([], [], marker="^", ls="-", color="#4b5563",
@@ -2727,14 +2733,16 @@ def pca_focused_figure(payload, output):
                     Line2D([], [], marker="o", ls="--", color="#88919a",
                           label="C-C-C")]
         figure.legend(handles=handles, loc="upper center", ncol=5, frameon=False,
-                      fontsize=10, bbox_to_anchor=(.5, .99))
-        figure.subplots_adjust(left=.06, right=.97, bottom=.08, top=.83, wspace=.24)
+                      fontsize=13 if large_times else 10, bbox_to_anchor=(.5, .99))
+        figure.subplots_adjust(left=.06, right=.97, bottom=.13 if large_times else .08,
+                               top=.83, wspace=.30 if large_times else .24)
         for ax, model in zip(figure.axes, payload["models"]):
             position = ax.get_position()
             figure.text(position.x0-.035, (position.y0+position.y1)/2,
                 f"PC3 ({100*model['explained_variance_ratio'][2]:.1f}%)",
-                rotation=90, va="center", ha="center", fontsize=9)
-        figure.savefig(output, dpi=190, bbox_inches="tight", facecolor="white")
+                rotation=90, va="center", ha="center", fontsize=14 if large_times else 9)
+        figure.savefig(output, dpi=190, bbox_inches="tight", facecolor="white",
+                       **({"pad_inches": .4} if large_times else {}))
         plt.close(figure)
 
 

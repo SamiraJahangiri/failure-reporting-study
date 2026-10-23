@@ -195,7 +195,7 @@ def add_run_settings(root: Path, summary: dict, answers: list[dict]):
                    missing_model_rule="No checkpoint substitution. Models with no saved answer have no rate and are absent from the figure.")
 
 
-def workflow(root: Path, output_dir: Path | None = None):
+def workflow(root: Path, output_dir: Path | None = None, *, large_times=False):
     """Draw a methods schematic only; never generate, rescore, or replay states."""
     import matplotlib
     matplotlib.use("Agg")
@@ -206,7 +206,8 @@ def workflow(root: Path, output_dir: Path | None = None):
     blue, green, orange, purple = "#4c78a8", "#1b9e77", "#d49500", "#7560a5"
     outputs = output_dir or root / "figures"
     outputs.mkdir(parents=True, exist_ok=True)
-    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 14,
+    with plt.rc_context({"font.family": "Times New Roman" if large_times else "DejaVu Sans",
+                         "font.size": 17 if large_times else 14,
                          "pdf.fonttype": 42}):
         fig, ax = plt.subplots(figsize=(12.6, 6.05))
         ax.set(xlim=(0, 14), ylim=(0, 6.8))
@@ -216,6 +217,8 @@ def workflow(root: Path, output_dir: Path | None = None):
         def text(x, y, value, size=14, color=ink, weight="normal", ha="center"):
             if "\n" in value:
                 raise ValueError("Workflow labels must be single-line")
+            if large_times:
+                size += 5 if any(c.isdigit() for c in value) else 3
             return ax.text(x, y, value, fontsize=size, color=color,
                            fontweight=weight, ha=ha, va="center")
 
@@ -318,8 +321,8 @@ def workflow(root: Path, output_dir: Path | None = None):
         "final-block PCA under the same three instructions. (c) Four alternative "
         "instructions test an evidence rule requiring supported claims and "
         "headings that organize the response.\n\n"
-        "Citation note: Use the existing Zhu et al. bibliography entry in "
-        "paper.tex; its key cannot be confirmed without the manuscript.\n\n"
+        "Citation note: The manuscript uses the existing Zhu et al. entry "
+        "with key zhu2026.\n\n"
         "Method notes\n"
         "Labels are Codex-assisted AI judgments, not independent human "
         "annotations. States are reconstructed without answer text and recorded "
@@ -347,6 +350,170 @@ def workflow(root: Path, output_dir: Path | None = None):
             "caption": str(outputs / "workflow_caption.txt"), "new_experiments": 0}
 
 
+def render_internal_states_paper(root, output):
+    import json
+    from pathlib import Path
+
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator, MultipleLocator
+
+    root, output = Path(root), Path(output)
+    saved = json.loads((root / 'results/internal_states_all.json').read_text())
+    names = {
+        'mistralai/Ministral-3-8B-Instruct-2512': 'Ministral',
+        'Qwen/Qwen3-8B': 'Qwen',
+        'google/gemma-2-9b-it': 'Gemma',
+    }
+    models = list(names)
+    pairs = [
+        ('baseline', 'evidence_contract', 'Baseline → evidence contract'),
+        ('baseline', 'transparency', 'Baseline → transparency'),
+        ('transparency', 'evidence_contract', 'Transparency → evidence contract'),
+    ]
+    panels = {(p['model'], p['source_policy'], p['target_policy']): p for p in saved['panels']}
+    with plt.rc_context({'font.family': 'Times New Roman', 'font.size': 14,
+                         'axes.spines.top': False, 'axes.spines.right': False,
+                         'pdf.fonttype': 42, 'ps.fonttype': 42}):
+        fig, axes = plt.subplots(3, 3, figsize=(11.5, 6.9), sharex='row', sharey='row')
+        fig.subplots_adjust(left=.18, right=.96, bottom=.11, top=.93, hspace=.28, wspace=.22)
+        for i, model in enumerate(models):
+            for j, (source, target, title) in enumerate(pairs):
+                panel = panels[(model, source, target)]
+                rows = panel['rows']
+                x = [r['block'] for r in rows]
+                assert x == list(range(1, panel['blocks'] + 1))
+                ax = axes[i, j]
+                ax.fill_between(x, [r['ci_low'] for r in rows], [r['ci_high'] for r in rows],
+                                color='#7555a2', alpha=.16, linewidth=0)
+                ax.plot(x, [r['contrast'] for r in rows], color='#7555a2', linewidth=1.8)
+                ax.axhline(0, color='#87919a', linewidth=.8, zorder=0)
+                ax.set_xlim(0, panel['blocks'])
+                ax.xaxis.set_major_locator(MultipleLocator(10))
+                ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+                ax.tick_params(axis='both', labelsize=15, length=3)
+                if j:
+                    ax.tick_params(axis='y', left=False, labelleft=False)
+                    ax.spines['left'].set_visible(False)
+                if i == 0:
+                    ax.set_title(title, fontsize=16, pad=10)
+            position = axes[i, 0].get_position()
+            fig.text(.075, (position.y0 + position.y1) / 2, names[model],
+                     ha='center', va='center', fontsize=15)
+        fig.supxlabel('Transformer block', fontsize=16, y=.02)
+        fig.supylabel('State-change difference (corrected − already-clean)', fontsize=16, x=.012)
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        for title in (axis.title for axis in axes[0]):
+            bounds = title.get_window_extent(renderer)
+            if bounds.x0 < 3 or bounds.x1 > fig.bbox.width-3:
+                raise ValueError('Enlarged state-plot title extends beyond the figure')
+        fig.savefig(output, dpi=220, facecolor='white')
+        limits = [{'model': model, 'xlim': list(axes[i, 0].get_xlim()),
+                   'ylim': list(axes[i, 0].get_ylim())} for i, model in enumerate(models)]
+        plt.close(fig)
+    return {'source': 'results/internal_states_all.json:panels', 'panel_n': len(panels),
+            'model_order': models, 'axis_limits': limits,
+            'font': 'Times New Roman', 'word_font_increase_pt': 3, 'number_font_increase_pt': 5,
+            'new_analysis': False}
+
+
+def render_summary_paper(root, output):
+    import json
+    from pathlib import Path
+
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import PercentFormatter
+
+    root, output = Path(root), Path(output)
+    saved = json.loads((root / 'results/summary_combined.json').read_text())
+    counts = {(r['model'], r['condition']): r for r in saved['counts']}
+    models, policies = saved['model_order'], saved['policy_order']
+    names = {'Qwen/Qwen3-8B': 'Qwen', 'google/gemma-2-9b-it': 'Gemma',
+             'mistralai/Ministral-3-8B-Instruct-2512': 'Ministral'}
+    with plt.rc_context({'font.family': 'Times New Roman', 'font.size': 15,
+                         'axes.spines.top': False, 'axes.spines.right': False,
+                         'pdf.fonttype': 42, 'ps.fonttype': 42}):
+        fig, ax = plt.subplots(figsize=(7.6, 4.4))
+        fig.subplots_adjust(left=.14, right=.985, bottom=.17, top=.84)
+        colors = ['#3b6586', '#299485', '#d38b3e']
+        titles = ['Baseline', 'Transparency', 'Evidence contract']
+        assert policies == ['baseline', 'transparency', 'evidence_contract']
+        for j, (policy, color, title) in enumerate(zip(policies, colors, titles)):
+            x = [i + (j - 1) * .24 for i in range(len(models))]
+            values = [counts[(model, policy)]['rate'] for model in models]
+            ax.bar(x, values, width=.22, color=color, label=title, zorder=3)
+            for position, value in zip(x, values):
+                ax.text(position, value + .012, f'{value:.0%}', ha='center', va='bottom', fontsize=16)
+        ax.set_xticks(range(len(models)), [names[model] for model in models])
+        ax.set_ylabel('Answers (%)', fontsize=15)
+        ax.set_ylim(0, .6)
+        ax.set_yticks([0, .2, .4, .6])
+        ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+        ax.grid(axis='y', color='#e4e9ed', linewidth=.7, zorder=0)
+        ax.tick_params(axis='x', length=0, pad=8, labelsize=15)
+        ax.tick_params(axis='y', labelsize=17)
+        handles, text = ax.get_legend_handles_labels()
+        fig.legend(handles, text, loc='upper center', ncol=3, frameon=False,
+                   bbox_to_anchor=(.55, .995), fontsize=14)
+        fig.savefig(output, dpi=220, facecolor='white')
+        plt.close(fig)
+    return {'source': 'results/summary_combined.json:counts', 'bar_n': len(counts),
+            'model_order': models, 'policy_order': policies,
+            'font': 'Times New Roman', 'word_font_increase_pt': 3, 'number_font_increase_pt': 5,
+            'new_analysis': False}
+
+
+def paper_figures(root: Path, output_dir: Path | None = None):
+    """Restyle frozen plots only: no labels, statistics, states, or PCA fitting."""
+    import matplotlib
+    matplotlib.use("Agg")
+    from matplotlib import font_manager
+    from pipelines.internal_states import pca_focused_figure
+
+    output_dir = output_dir or root / "figures"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    font = font_manager.findfont(font_manager.FontProperties(family="Times New Roman"),
+                                 fallback_to_default=False)
+    sources = ["results/internal_states_all.json", "results/summary_combined.json",
+               "results/pca.html", "results/pca.json", "results/pca.csv",
+               "results/internal_states.csv", "results/answers.jsonl", "results/labels.jsonl",
+               "data/model_inputs.jsonl"]
+    preserved = {name: sha256_file(root / name) for name in sources}
+    state_plot = render_internal_states_paper(root, output_dir / "internal_states_all.png")
+    summary_plot = render_summary_paper(root, output_dir / "summary_combined.png")
+    original_pca = read_json(root / "results/pca.json")
+    if preserved["results/pca.html"] != original_pca["outputs"]["html"]["sha256"]:
+        raise ValueError("Saved PCA HTML does not match its manifest")
+    marker = '<script type="application/json" id="pca-data">'
+    html = (root / "results/pca.html").read_text()
+    if html.count(marker) != 1:
+        raise ValueError("Expected one saved PCA coordinate payload")
+    payload = json.loads(html.split(marker, 1)[1].split("</script>", 1)[0])
+    pca_focused_figure(payload, output_dir / "pca_focused.png", large_times=True)
+    workflow(root, output_dir, large_times=True)
+    for name, expected in preserved.items():
+        if sha256_file(root / name) != expected:
+            raise ValueError("Presentation update changed a saved source: " + name)
+    files = ["internal_states_all.png", "pca_focused.png", "summary_combined.png",
+             "workflow.pdf", "workflow.png"]
+    metadata = {"purpose": "Font-only paper exports from saved numerical plot records",
+        "font_family": "Times New Roman", "resolved_font": font,
+        "minimum_increase_pt": {"words": 3, "numbers": 5},
+        "font_sizes_pt": {
+            "internal_states": {"titles": [13, 16], "models": [12, 15], "axes": [13, 16], "ticks": [10, 15]},
+            "summary": {"models_and_axis": [12, 15], "legend": [11, 14], "ticks": [12, 17], "percentages": [11, 16]},
+            "pca": {"legend": [10, 13], "titles": [11, 16], "axes": [9, 14], "ticks": [7, 12]},
+            "workflow": {"nodes_and_titles": [14, 17], "unboxed_notes": [12, 15], "models": [12, 17], "input": [16, 21]}},
+        "source_sha256": preserved, "saved_sources_unchanged": True,
+        "new_answers": 0, "new_scoring": 0, "state_cache_reads": 0, "PCA_refits": 0,
+        "internal_states": state_plot, "summary": summary_plot,
+        "outputs": {name: {"sha256": sha256_file(output_dir / name),
+                           "bytes": (output_dir / name).stat().st_size} for name in files}}
+    atomic_write_json(output_dir / "typography.json", metadata)
+    return {"output_dir": str(output_dir), "files": files, "font": "Times New Roman",
+            "saved_sources_unchanged": True, "new_experiments": 0}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -357,10 +524,15 @@ def main():
     commands.add_parser("report")
     diagram = commands.add_parser("workflow", help="Render the paper's study overview only")
     diagram.add_argument("--output-dir", type=Path)
+    diagram.add_argument("--large-times", action="store_true")
+    paper_plots = commands.add_parser("paper-figures", help="Restyle saved paper plots only")
+    paper_plots.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     root, results = args.root.resolve(), args.root.resolve() / "results"
+    if args.command == "paper-figures":
+        print(json.dumps(paper_figures(root, args.output_dir))); return
     if args.command == "workflow":
-        print(json.dumps(workflow(root, args.output_dir))); return
+        print(json.dumps(workflow(root, args.output_dir, large_times=args.large_times))); return
     load_and_verify_inputs(root)
     if args.command == "reuse":
         source = args.source.resolve() if args.source else results / "preserved_exact"

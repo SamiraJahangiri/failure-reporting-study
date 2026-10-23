@@ -2,7 +2,7 @@
 
 A compact replay of the unchanged **Failure-Transparent Agents v0.3.0** dataset: 100 tasks, the authors' three instruction policies, and 300 frozen system/user inputs per model. Each supplied tool observation lacks the evidence needed to establish the requested outcome.
 
-The [paper workflow](figures/workflow.png) summarizes the original policy evaluation, before-answer hidden-state comparisons/PCA, and separate prompt-component experiment. A [vector PDF](figures/workflow.pdf) and [caption draft](figures/workflow_caption.txt) accompany it. Rebuild this presentation-only diagram with `python -m pipelines.report workflow`.
+The [paper workflow](figures/workflow.png) summarizes the original policy evaluation, before-answer hidden-state comparisons/PCA, and separate prompt-component experiment. A [vector PDF](figures/workflow.pdf) and [caption draft](figures/workflow_caption.txt) accompany it. The paper exports use Times New Roman with enlarged text and numbers. Rebuild all four presentation-only figures with `python -m pipelines.report paper-figures`; this reads saved plot records without repeating experiments or analyses.
 
 The completed Qwen3-8B and Gemma-2-9b-it replay is preserved. Its two greedy repetitions were identical, so comparisons select repetition 0: 300 answers per model. Their existing labels are reused without scoring them again. New official models generate one report per task/policy. New answers receive one Codex-assisted full-answer rubric review; this is not independent human annotation or reproduction of the authors' published human scores.
 
